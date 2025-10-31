@@ -1,32 +1,53 @@
 package com.example.pos_backend.controller; // Paket adınızın bu olduğundan emin olun
 
 import com.example.pos_backend.model.Table;
-import com.example.pos_backend.repository.TableRepository;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.example.pos_backend.service.TableService; // DEĞİŞİKLİK 1: Artık Repository değil, Service import ediyoruz.
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*; // @PutMapping, @PathVariable, @RequestParam için import
 
 import java.util.List;
 
-@RestController // 1. Spring'e bu sınıfın bir API Kontrolcüsü olduğunu belirtir.
-
+@CrossOrigin("*") // Android (veya Postman) tarafının erişebilmesi için
+@RestController
+@RequestMapping("") // Tüm masa endpoint'lerinin başı '/api'
 public class TableController {
 
-    private final TableRepository tableRepository;
+    // --- DEĞİŞİKLİK 1 ---
+    // Artık Repository'ye (Müteahhit) değil, Service'e (Beyin) bağlanıyoruz.
+    private final TableService tableService;
 
-    // 3. TableRepository'yi buraya enjekte ediyoruz (Dependency Injection)
-    public TableController(TableRepository tableRepository) {
-        this.tableRepository = tableRepository;
+    // @Autowired ile Spring'den 'TableService'i istiyoruz.
+    @Autowired
+    public TableController(TableService tableService) {
+        this.tableService = tableService;
     }
 
-    /**
-     * TÜM MASALARI GETİREN API ENDPOINT'İ
-     * Bu metoda http://localhost:8080/api/tables adresinden erişilecek.
-     */
-    @GetMapping("/masalar") // 4. Bu metodu "/tables" adresine (GET isteği) bağlar.
+    // --- DEĞİŞİKLİK 2 ---
+    // Bu 'GET /masalar' metodu (Adım 8-9'da yaptığımız)
+    // artık işin mantığını 'TableService'e devrediyor.
+    @GetMapping("/masalar")
     public List<Table> getAllTables() {
-        // 5. Veritabanındaki tüm masaları bul ve döndür.
-        // Spring Boot, bu 'List<Table>' listesini OTOMATİK olarak JSON formatına çevirecektir.
-        return tableRepository.findAll();
+        // KAPI (Controller), İŞİ BEYNE (Service) PASLAR
+        return tableService.getAllTables();
+    }
+
+    // --- YENİ ENDPOINT (SENARYO 2) ---
+    // Bu, "Masa durumunu değiştir (boş -> dolu)" senaryonuzu gerçekleştiren API kapısıdır.
+    // URL: http://localhost:8080/api/masalar/{id}/durum?yeniDurum=dolu
+
+    /**
+     * Bir masanın durumunu günceller.
+     * @param id Masa ID'si (URL'den gelir, örn: 5)
+     * @param newStatus Yeni durum (Parametreden gelir, örn: "dolu")
+     * @return Güncellenmiş Masa nesnesi
+     */
+    @PutMapping("/masalar/{id}/durum")
+    public Table updateTableStatus(
+            @PathVariable Long id,                 // @PathVariable: URL'deki {id} kısmını (örn: 5) alır.
+            @RequestParam String newStatus         // @RequestParam: URL'deki ?newStatus=... kısmını (örn: "dolu") alır.
+    ) {
+        // KAPI (Controller), İŞİ BEYNE (Service) PASLAR
+        // "Beyne diyoruz ki: 5 numaralı masanın durumunu 'dolu' olarak güncelle."
+        return tableService.updateTableStatus(id, newStatus);
     }
 }

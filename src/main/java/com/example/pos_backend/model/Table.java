@@ -1,55 +1,53 @@
-package com.example.pos_backend.model;
+package com.example.pos_backend.model; // Paket adınızın bu olduğundan emin olun
 
-// JPA (veritabanı) için gerekli importlar
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
-// Not: Tablo adını 'tables' yapıyoruz çünkü 'table' SQL'de rezerve bir kelime olabilir.
-@Entity(name = "tables") 
+@Entity
+@jakarta.persistence.Table(name = "tables")
 public class Table {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Otomatik artan ID (1, 2, 3...)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long tableID; // Sizin isteğiniz: tableID (id yerine)
 
-    private String name; // Örn: "Masa 5"
-    private String status; // Örn: "Boş", "Dolu", "Rezerve"
-    private int capacity; // Örn: 4 (kişilik)
+    private String tableName; // Sizin isteğiniz: tableName (name yerine)
 
-    // Android projenizdeki gibi sabitler
+    private String status; // Sizin isteğiniz: status
+
+    // Eski 'capacity' alanı sizin yeni listenizde olmadığı için kaldırıldı.
+
+    // Statik sabitler (Bunlar kalabilir, kullanışlıdır)
     public static final String STATUS_AVAILABLE = "Boş";
     public static final String STATUS_OCCUPIED = "Dolu";
     public static final String STATUS_RESERVED = "Rezerve";
 
-    // JPA için BOŞ CONSTRUCTOR şarttır
+    // JPA için boş constructor
     public Table() {
     }
 
-    // Veri eklemek için kullanacağımız constructor
-    public Table(String name, String status, int capacity) {
-        this.name = name;
+    // Android'de (Adım 6'daki DatabaseInitializerService)
+    // başlangıç verilerini oluşturmak için kullandığımız constructor
+    public Table(String tableName, String status) {
+        this.tableName = tableName;
         this.status = status;
-        this.capacity = capacity;
     }
 
-    // --- JPA için GETTER ve SETTER metotları şarttır ---
+    // --- Getter ve Setter Metotları ---
 
-    public Long getId() {
-        return id;
+    public Long getTableID() {
+        return tableID;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setTableID(Long tableID) {
+        this.tableID = tableID;
     }
 
-    public String getName() {
-        return name;
+    public String getTableName() {
+        return tableName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 
     public String getStatus() {
@@ -58,13 +56,5 @@ public class Table {
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
     }
 }
