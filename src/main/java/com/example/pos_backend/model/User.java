@@ -1,47 +1,63 @@
-package com.example.pos_backend.model; // Paket adınızın bu olduğundan emin olun
-
-// JPA (veritabanı) için gerekli importlar
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+package com.example.pos_backend.model;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
 import jakarta.persistence.Table;
 
-@Entity // 1. Bu sınıfın bir veritabanı tablosu olduğunu belirtir
-@Table(name = "users") // 2. Veritabanındaki tablonun adını "users" yapar
+@Entity
+@Table(name = "users") // Arkadaşınızın SQL'indeki 'users' tablo adı
 public class User {
 
-    @Id // 3. Bu alanın "Primary Key" (Birincil Anahtar) olduğunu belirtir
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // 4. ID'lerin otomatik artan sayı olmasını sağlar (1, 2, 3...)
-    private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long userID; // Arkadaşınızın SQL'indeki 'userID'
 
-    private String username;
-    private String password;
-    private String role; // Rol: "KASA", "GARSON", "MUTFAK"
+    @Column(length = 50, unique = true, nullable = false)
+    private String username; // Arkadaşınızın SQL'indeki 'username'
+    @JsonIgnore
+    @Column(name = "passwordHash", length = 255, nullable = false) // 'password' değil, 'passwordHash'
+    private String password; // Arkadaşınızın SQL'indeki 'passwordHash' (Java'da 'password' diyelim)
 
-    // 5. ROL SABİTLERİ (Android projenizdeki gibi)
-    public static final String ROLE_CASHIER = "KASA";
-    public static final String ROLE_WAITER = "GARSON";
-    public static final String ROLE_KITCHEN = "MUTFAK";
+    @Column(length = 100, nullable = false)
+    private String fullName; // Arkadaşınızın SQL'inde eklediği YENİ ALAN
 
-    // 6. JPA'nın bu sınıfı kullanabilmesi için BOŞ CONSTRUCTOR şarttır
+    @Column(nullable = false)
+    private boolean isActive = true; // Arkadaşınızın SQL'indeki 'isActive' alanı
+
+    // --- DEĞİŞİKLİK 1: 'String role' gitti, 'Role role' geldi ---
+    // Birçok 'User' (Kullanıcı), bir 'Role' (Role) sahip olabilir.
+    @ManyToOne
+    @JoinColumn(name = "roleID", nullable = false) // Arkadaşınızın SQL'indeki 'roleID' Foreign Key'i
+    private Role role;
+
+    // --- DEĞİŞİKLİK 2: STATİK ROLLER SİLİNDİ ---
+    // 'public static final String ROLE_CASHIER = "CASHIER";' gibi
+    // eski sabit (static final) String'leri sildik.
+    // Roller artık 'Roles' tablosundan gelecek.
+
+    // --- Constructor (Yapıcı Metotlar) ---
     public User() {
     }
 
-    // Orijinal constructor'ınız (veri eklemek için kullanışlı)
-    public User(String username, String password, String role) {
+    // --- DEĞİŞİKLİK 3: Constructor güncellendi ---
+    // 'DatabaseInitializerService'te kullanmak için
+    // Artık 'String role' değil, 'Role role' nesnesi alıyor
+    public User(String username, String password, String fullName, Role role, boolean isActive) {
         this.username = username;
-        this.password = password;
+        this.password = password; // (Bizim kodumuzda 'password' olarak kalsın)
+        this.fullName = fullName;
         this.role = role;
+        this.isActive = isActive;
     }
 
-    // 7. JPA'nın alanlara erişebilmesi için GETTER ve SETTER metotları şarttır
-    public Long getId() {
-        return id;
+
+    // --- Getter ve Setter Metotları (Yeni alanlar için güncellendi) ---
+
+    public Long getUserID() {
+        return userID;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setUserID(Long userID) {
+        this.userID = userID;
     }
 
     public String getUsername() {
@@ -60,11 +76,27 @@ public class User {
         this.password = password;
     }
 
-    public String getRole() {
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
+    }
+
+    public Role getRole() {
         return role;
     }
 
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 }

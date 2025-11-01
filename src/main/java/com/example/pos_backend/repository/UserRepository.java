@@ -1,18 +1,14 @@
-package com.example.pos_backend.repository; // Paket adınızın bu olduğundan emin olun
+package com.example.pos_backend.repository;
 
 import com.example.pos_backend.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import java.util.Optional; // Bu import'u ekleyin
 
-@Repository // 1. Spring'e bunun bir Depo olduğunu belirtir
+@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-    // JpaRepository<Hangi Entity'yi yöneteceği, O Entity'nin ID'sinin Tipi>
 
-    // 2. Spring Data JPA'nın sihirli metot oluşturma özelliği:
-    // Sadece bu metodu tanımlayarak, Spring bizim için "username" (kullanıcı adı)
-    // sütununa göre arama yapan SQL kodunu otomatik yazar.
-    // Android'deki login (giriş) işlemi için bunu kullanacağız.
+    // YENİ EKLENEN METOT: (DatabaseInitializerService'in ihtiyacı olan)
     Optional<User> findByUsername(String username);
 }

@@ -1,5 +1,6 @@
 package com.example.pos_backend.model; // Paket adınızın bu olduğundan emin olun
 import java.math.BigDecimal; // Bu import'u ekleyin
+
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 
@@ -23,7 +24,7 @@ public class Product {
     // Az önce (Adım 17'de) oluşturduğumuz 'Category' yer tutucusuna bağlanıyoruz.
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = true) // Kategorisiz ürün olabilir (?) diye 'nullable = true'
-    private Category category;
+    private  Category category;
 
     @Column(name = "is_kitchen_item") // Arkadaşınızın alanı: isKitchenItem
     private boolean isKitchenItem;
