@@ -83,7 +83,8 @@ public class DatabaseInitializerService {
             roleRepository.saveAll(Arrays.asList(
                     new Role("Admin"),   // Arkadaşınızın verisi
                     new Role("Garson"),  // Arkadaşınızın verisi
-                    new Role("Kasiyer")  // Arkadaşınızın verisi
+                    new Role("Kasiyer"),  // Arkadaşınızın verisi
+                    new Role("Mutfak")
             ));
         } else {
             System.out.println("Roller zaten mevcut.");
@@ -100,6 +101,7 @@ public class DatabaseInitializerService {
             Role adminRole = roleRepository.findByRoleName("Admin").orElse(null);
             Role garsonRole = roleRepository.findByRoleName("Garson").orElse(null);
             Role kasiyerRole = roleRepository.findByRoleName("Kasiyer").orElse(null);
+            Role mutfakRole = roleRepository.findByRoleName("Mutfak").orElse(null);
 
             if (adminRole == null || garsonRole == null || kasiyerRole == null) {
                 System.out.println("HATA: Roller bulunamadı. Kullanıcılar oluşturulamadı.");
@@ -112,7 +114,8 @@ public class DatabaseInitializerService {
                     new User("adminuser", "hash_admin123", "Ayşe Yılmaz", adminRole, true),
                     new User("garson01", "hash_garson123", "Mehmet Demir", garsonRole, true),
                     new User("kasiyer02", "hash_kasiyer123", "Zeynep Kaya", kasiyerRole, true),
-                    new User("deneme_pasif", "hash_deneme", "Pasif Kullanıcı", garsonRole, false)
+                    new User("deneme_pasif", "hash_deneme", "Pasif Kullanıcı", garsonRole, false),
+                    new User("mutfak1","mutfak123","sado",mutfakRole,true)
             ));
         } else {
             System.out.println("Kullanıcılar zaten mevcut.");
