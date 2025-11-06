@@ -1,31 +1,49 @@
-package com.example.pos_backend.dto; // Yeni 'dto' paketimiz
+// Paket adınız (örn: com.example.pos_backend.dto)
+package com.example.pos_backend.dto;
 
 /**
- * Bu sınıf bir @Entity DEĞİLDİR.
- * Sadece 'POST /api/siparisler' endpoint'ine gönderilen JSON'u
- * yakalamak için kullanılan bir Veri Taşıma Nesnesidir (DTO).
+ * Bu DTO (Veri Aktarım Nesnesi), Android'den
+ * '/siparisler' (Yeni Sipariş Oluştur) kapısına gelen
+ * JSON'u yakalamak için kullanılır.
+ *
+ * --- GÜNCELLEME (Adım 88): ---
+ * 'tableID' (Büyük D) -> 'tableId' (Küçük d) olarak düzeltildi.
+ * Bu, Java'nın 'camelCase' isimlendirme standardıdır ve
+ * Android'den (GSON) gelen {"tableId":...} JSON'u ile
+ * artık BİREBİR EŞLEŞECEKTİR.
  */
 public class CreateOrderRequest {
 
-    private Long tableID;
-    private Long waiterID;
+    // Alan adları, Android'in (GSON) gönderdiği JSON "key"leri ile
+    // BİREBİR AYNI (Büyük/Küçük harf duyarlı) olmalıdır.
+    private Long tableId;  // <-- DÜZELTİLDİ (küçük 'd')
+    private Long waiterId; // <-- DÜZELTİLDİ (küçük 'd')
 
-    // JSON'u nesneye çevirmek (Deserialization) için
-    // Spring'in (Jackson kütüphanesi) bu getter ve setter'lara ihtiyacı var.
-
-    public Long getTableID() {
-        return tableID;
+    // Jackson'ın (veya diğer kütüphanelerin)
+    // 'new CreateOrderRequest()' yapabilmesi için boş bir kurucu (constructor)
+    public CreateOrderRequest() {
     }
 
-    public void setTableID(Long tableID) {
-        this.tableID = tableID;
+    // --- GETTER METOTLARI ---
+    // (Java standartlarına göre 'getTableId' olmalı)
+
+    public Long getTableId() {
+        return tableId;
     }
 
-    public Long getWaiterID() {
-        return waiterID;
+    public Long getWaiterId() {
+        return waiterId;
     }
 
-    public void setWaiterID(Long waiterID) {
-        this.waiterID = waiterID;
+    // --- SETTER METOTLARI ---
+    // (Java standartlarına göre 'setTableId' olmalı)
+    // Jackson, {"tableId":1} JSON'unu görünce bu 'setTableId' metodunu çağıracak.
+
+    public void setTableId(Long tableId) {
+        this.tableId = tableId;
+    }
+
+    public void setWaiterId(Long waiterId) {
+        this.waiterId = waiterId;
     }
 }

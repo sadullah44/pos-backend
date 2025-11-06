@@ -1,39 +1,53 @@
-package com.example.pos_backend.controller; // Paket adınızın bu olduğundan emin olun
+// Paket adınız (örn: com.example.pos_backend.controller)
+package com.example.pos_backend.controller;
 
 import com.example.pos_backend.model.Product;
-import com.example.pos_backend.service.ProductService; // 'Ürün Beyni'ni import et
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import com.example.pos_backend.service.ProductService; // "Ürün Beyni"ni import et
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin("*") // Android (veya Postman) tarafının erişebilmesi için
+@CrossOrigin("*")
 @RestController
-@RequestMapping("/urunler") // Tüm ürün endpoint'lerinin başı '/api/urunler'
+@RequestMapping("/urunler") // Ana adres (Android'in '@GET("urunler")' ile eşleşir)
 public class ProductController {
-
-    // --- 'Beyin' katmanını (Service) enjekte etme ---
 
     private final ProductService productService;
 
-    // Tek constructor, Spring otomatik olarak anlar
     public ProductController(ProductService productService) {
         this.productService = productService;
     }
 
-    // --- YENİ ENDPOINT (Arkadaşınızın İhtiyacı İçin) ---
-    // Bu, "Tüm Ürünleri Getir" senaryosunu gerçekleştiren API kapısıdır.
-    // URL: GET http://localhost:8080/api/urunler
-
     /**
-     * Tüm ürünlerin listesini döndürür.
-     * @return Veritabanındaki tüm 'Product' nesnelerinin bir listesi.
+     * MEVCUT KAPI (Tüm Ürünleri Getirir)
+     * Adres: GET /urunler
+     * (Ana adres '@RequestMapping("/urunler")' olduğu için,
+     * bu metot sadece '@GetMapping' kullanır)
      */
     @GetMapping
     public List<Product> getAllProducts() {
-        // KAPI (Controller), İŞİ BEYNE (Service) PASLAR
         return productService.getAllProducts();
     }
+
+
+    // --- YENİ EKLENEN KAPI (Adım 96 - Düzeltme) ---
+    /**
+     * "Mutfağa Ürün Ekleme" Akışı Adım 8:
+     * Kategori ID'sine göre SADECE o kategorinin ürünlerini getirir.
+     * Adres: GET /urunler/kategori/{id}
+     *
+     * Bu, Android'deki (Adım 94) '@GET("urunler/kategori/{kategoriId}")'
+     * kapısının "Sunucu" tarafındaki karşılığıdır.
+     */
+    @GetMapping("/kategori/{kategoriId}") // '/urunler' (ana adres) + '/kategori/{id}'
+    public List<Product> getProductsByCategoryId(@PathVariable Long kategoriId) {
+
+        // KAPI (Controller), İŞİ BEYNE (Service) PASLAR
+        // (Bu 'getProductsByCategoryId' metodu 'ProductService'de
+        // 'kırmızı' görünecek, çünkü onu bir sonraki adımda (Bölüm 2)
+        // ekleyeceğiz)
+        return productService.getProductsByCategoryId(kategoriId);
+    }
+    // --- DÜZELTME BİTTİ ---
+
 }

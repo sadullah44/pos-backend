@@ -27,7 +27,7 @@ public class OrderController {
      */
     @PostMapping
     public Order createNewOrder(@RequestBody CreateOrderRequest request) {
-        return orderService.createOrder(request.getTableID(), request.getWaiterID());
+        return orderService.createOrder(request.getTableId(), request.getWaiterId());
     }
 
     /**
