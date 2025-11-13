@@ -7,19 +7,19 @@ package com.example.pos_backend.dto; // 'dto' paketimiz
  */
 public class AddOrderItemRequest {
 
-    private Long productID;
+    private Long productId;
     private int quantity;
     private String itemNotes;
 
     // JSON'u nesneye çevirmek (Deserialization) için
     // Spring'in (Jackson kütüphanesi) bu getter ve setter'lara ihtiyacı var.
 
-    public Long getProductID() {
-        return productID;
+    public Long getProductId() {
+        return productId;
     }
 
-    public void setProductID(Long productID) {
-        this.productID = productID;
+    public void setProductID(Long productId) {
+        this.productId = productId;
     }
 
     public int getQuantity() {

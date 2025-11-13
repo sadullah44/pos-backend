@@ -1,12 +1,13 @@
-package com.example.pos_backend.controller; // Paket adınızın bu olduğundan emin olun
+// Paket adınız (örn: com.example.pos_backend.controller)
+package com.example.pos_backend.controller;
 
-import com.example.pos_backend.dto.AddOrderItemRequest;
+import com.example.pos_backend.dto.AddOrderItemRequest; // <-- SADECE 1 KEZ İMPORT EDİLDİ
 import com.example.pos_backend.dto.CreateOrderRequest;
 import com.example.pos_backend.model.Order;
 import com.example.pos_backend.service.OrderService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List; // List importu eklendi
+import java.util.List; // List importu
 
 @CrossOrigin("*")
 @RestController
@@ -19,39 +20,21 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    // --- ÖNCEKİ ENDPOINT'LER (Aynı kalıyor) ---
+    // --- MEVCUT KAPILAR (Bunlar doğruydu) ---
 
     /**
-     * "Yeni Sipariş Oluştur" kapısı (Adım 32)
-     * URL: POST /api/siparisler
+     * "Yeni Sipariş Oluştur" kapısı
+     * Adres: POST /siparisler
      */
     @PostMapping
     public Order createNewOrder(@RequestBody CreateOrderRequest request) {
+        // (Bu metot Adım 104.3'teki 'createOrder' (Beyin) ile eşleşir)
         return orderService.createOrder(request.getTableId(), request.getWaiterId());
     }
 
     /**
-     * "Ürün Ekle" kapısı (Adım 36 - 'urunEkle' sizin seçiminizdi)
-     * URL: POST /api/siparisler/{orderID}/urunEkle
-     */
-    @PostMapping("/{orderID}/urunEkle")
-    public Order addOrderItemToOrder(
-            @PathVariable Long orderID,
-            @RequestBody AddOrderItemRequest request
-    ) {
-        return orderService.addOrderItemToOrder(
-                orderID,
-                request.getProductID(),
-                request.getQuantity(),
-                request.getItemNotes()
-        );
-    }
-
-    // --- YENİ EKLENEN ENDPOINT'LER (Adım 44) ---
-
-    /**
-     * YENİ ENDPOINT (Android için): Tüm siparişleri getirir.
-     * URL: GET http://localhost:8080/api/siparisler
+     * "Tüm Siparişleri Getir" kapısı
+     * Adres: GET /siparisler
      */
     @GetMapping
     public List<Order> getAllOrders() {
@@ -59,8 +42,8 @@ public class OrderController {
     }
 
     /**
-     * YENİ ENDPOINT (Android için): Tek bir siparişin detaylarını getirir.
-     * URL: GET http://localhost:8080/api/siparisler/3
+     * "ID'ye Göre Sipariş Getir" kapısı
+     * Adres: GET /siparisler/{orderID}
      */
     @GetMapping("/{orderID}")
     public Order getOrderById(@PathVariable Long orderID) {
@@ -68,16 +51,37 @@ public class OrderController {
     }
 
     /**
-     * YENİ ENDPOINT (SENARYO 3: "Sipariş Durumunu Güncelle")
-     * URL: PUT http://localhost:8080/api/siparisler/3/durum?yeniDurum=tamamlandi
+     * "Sipariş Durumunu Güncelle" kapısı
+     * Adres: PUT /siparisler/{orderID}/durum
      */
     @PutMapping("/{orderID}/durum")
     public Order updateOrderStatus(
-            @PathVariable Long orderID,                 // @PathVariable: URL'deki {orderID} kısmını (örn: 3) alır.
-            @RequestParam String yeniDurum              // @RequestParam: URL'deki ?yeniDurum=... kısmını (örn: "tamamlandi") alır.
+            @PathVariable Long orderID,
+            @RequestParam String yeniDurum
     ) {
-        // KAPI (Controller), İŞİ BEYNE (Service) PASLAR
-        // "Beyne diyoruz ki: 3 numaralı siparişin durumunu 'tamamlandi' olarak güncelle."
         return orderService.updateOrderStatus(orderID, yeniDurum);
     }
+
+    // --- "ESKİ" (Adım 36) METOT SİLİNDİ ---
+    // (O 'orderService.addOrderItemToOrder(orderID, request.getProductId(), ...)'
+    // metodunu çağıran 'kırmızı hata'lı kod buradan kaldırıldı)
+    // --- TEMİZLİK BİTTİ ---
+
+
+    // --- "YENİ" (Adım 104.2) METOT (Bu kalıyor) ---
+    /**
+     * "Mutfağa Ürün Ekleme" Akışı Adım 10 (Final):
+     * Mevcut bir siparişe yeni bir ürün kalemi (örn: "Sütlaç") ekler.
+     * Adres: POST /siparisler/{orderId}/urunEkle
+     */
+    @PostMapping("/{orderId}/urunEkle")
+    public Order addOrderItemToOrder(
+            @PathVariable Long orderId,
+            @RequestBody AddOrderItemRequest request // (Adım 104.1 DTO'su)
+    ) {
+        // (Bu metot Adım 104.3'teki 'addOrderItemToOrder(Long, AddOrderItemRequest)'
+        // (Beyin) metoduyla EŞLEŞİR)
+        return orderService.addOrderItemToOrder(orderId, request);
+    }
+    // --- DÜZELTME BİTTİ ---
 }

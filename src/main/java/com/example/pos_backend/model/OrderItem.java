@@ -1,110 +1,74 @@
-package com.example.pos_backend.model; // Paket adınızın bu olduğundan emin olun
-import java.math.BigDecimal; // Bu import'u ekleyin
+// Paket adınız (örn: com.example.pos_backend.model)
+package com.example.pos_backend.model;
+
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import java.math.BigDecimal;
 
 @Entity
-@Table(name = "orderItems")
+@Table(name = "order_items")
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long orderItemID; // Sütun adı da 'orderItemID' olacak
+    private Long orderItemId;
 
-    // --- İlişkiler ---
-    // İlişkilerde, @JoinColumn'daki 'name' alanı
-    // veritabanındaki sütun adını belirler.
-    // Bunları da camelCase yapalım: 'orderID' ve 'productID'
-
-    @ManyToOne
-    @JoinColumn(name = "orderID", nullable = false) // 'order_id' yerine 'orderID'
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    @JsonBackReference
     private Order order;
 
-    @ManyToOne
-    @JoinColumn(name = "productID", nullable = false) // 'product_id' yerine 'productID'
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    // --- Diğer Alanlar ---
-    // @Column etiketleri kaldırıldı.
-    // Java adı = Veritabanı Sütun Adı
+    // --- "GARSON" AKIŞI İÇİN GEREKLİ ALANLAR (Adım 104.4) ---
 
-    private int quantity; // Sütun adı: 'quantity'
-    @Column(precision = 10, scale = 2)
-    private BigDecimal priceAtOrder; // Sütun adı: 'priceAtOrder'
+    @Column(nullable = false)
+    private int quantity;
 
-    private String itemNotes; // Sütun adı: 'itemNotes'
+    @Column(nullable = false)
+    private BigDecimal priceAtOrder;
 
-    private String kitchenStatus; // Sütun adı: 'kitchenStatus'
+    private String itemNotes; // (örn: "Acısız")
 
-    private boolean isServed; // Sütun adı: 'isServed'
+    // --- "MUTFAK" AKIŞI İÇİN YENİ EKLENEN ALANLAR (Adım 104.6) ---
 
-    // JPA için boş constructor
+    @Column(nullable = false, length = 20)
+    private String kitchenStatus; // (örn: "bekliyor", "hazırlanıyor", "hazır")
+
+    @Column(nullable = false)
+    private boolean served; // (Servis edildi mi? true/false)
+
+    // --- DÜZELTME BİTTİ ---
+
+    // --- Constructor (Başlatıcı Metot) ---
+    // (Yeni alanları varsayılan değerlerle başlatmak için)
     public OrderItem() {
+        this.kitchenStatus = "bekliyor"; // Varsayılan durum
+        this.served = false; // Varsayılan durum
     }
 
-    // --- Getter ve Setter Metotları ---
+    // --- (Tüm Getter ve Setter Metotları) ---
 
-    public Long getOrderItemID() {
-        return orderItemID;
-    }
+    public Long getOrderItemId() { return orderItemId; }
+    public void setOrderItemId(Long orderItemId) { this.orderItemId = orderItemId; }
+    public Order getOrder() { return order; }
+    public void setOrder(Order order) { this.order = order; }
+    public Product getProduct() { return product; }
+    public void setProduct(Product product) { this.product = product; }
+    public int getQuantity() { return quantity; }
+    public void setQuantity(int quantity) { this.quantity = quantity; }
+    public BigDecimal getPriceAtOrder() { return priceAtOrder; }
+    public void setPriceAtOrder(BigDecimal priceAtOrder) { this.priceAtOrder = priceAtOrder; }
+    public String getItemNotes() { return itemNotes; }
+    public void setItemNotes(String itemNotes) { this.itemNotes = itemNotes; }
 
-    public void setOrderItemID(Long orderItemID) {
-        this.orderItemID = orderItemID;
-    }
+    // --- YENİ EKLENEN METOTLAR ---
 
-    public Order getOrder() {
-        return order;
-    }
-
-    public void setOrder(Order order) {
-        this.order = order;
-    }
-
-    public Product getProduct() {
-        return product;
-    }
-
-    public void setProduct(Product product) {
-        this.product = product;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
-    }
-
-    public BigDecimal getPriceAtOrder() {
-        return priceAtOrder;
-    }
-
-    public void setPriceAtOrder(BigDecimal priceAtOrder) {
-        this.priceAtOrder = priceAtOrder;
-    }
-
-    public String getItemNotes() {
-        return itemNotes;
-    }
-
-    public void setItemNotes(String itemNotes) {
-        this.itemNotes = itemNotes;
-    }
-
-    public String getKitchenStatus() {
-        return kitchenStatus;
-    }
-
-    public void setKitchenStatus(String kitchenStatus) {
-        this.kitchenStatus = kitchenStatus;
-    }
-
-    public boolean isServed() {
-        return isServed;
-    }
-
-    public void setServed(boolean served) {
-        isServed = served;
-    }
+    public String getKitchenStatus() { return kitchenStatus; }
+    public void setKitchenStatus(String kitchenStatus) { this.kitchenStatus = kitchenStatus; }
+    public boolean isServed() { return served; }
+    public void setServed(boolean served) { this.served = served; }
 }
