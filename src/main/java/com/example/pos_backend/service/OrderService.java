@@ -147,5 +147,8 @@ public class OrderService {
         // Adım 7: Güncellenmiş "Sepet"i (Order) Android'e Geri Döndür
         return savedOrder;
     }
-    // --- DÜZELTME BİTTİ ---
+    public Order getActiveOrderByTableId(Long tableId) {
+        return orderRepository.findFirstByTable_TableIDAndOrderStatusNot(tableId, "ÖDENDİ")
+                .orElse(null); // Veya yeni sipariş oluşturulabilir
+    }
 }

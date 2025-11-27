@@ -8,15 +8,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class DatabaseInitializerService {
 
-    // --- YENİ EKLENDİ: Artık 9 'Müteahhit' (Repository) var ---
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository; // YENİ EKLENDİ
+    private final RoleRepository roleRepository;
     private final TableRepository tableRepository;
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
@@ -25,9 +22,8 @@ public class DatabaseInitializerService {
     private final PaymentMethodRepository paymentMethodRepository;
     private final PaymentRepository paymentRepository;
 
-    // --- GÜNCELLENDİ: Constructor (Yapıcı Metot) ---
     public DatabaseInitializerService(UserRepository userRepository,
-                                      RoleRepository roleRepository, // YENİ EKLENDİ
+                                      RoleRepository roleRepository,
                                       TableRepository tableRepository,
                                       CategoryRepository categoryRepository,
                                       ProductRepository productRepository,
@@ -36,7 +32,7 @@ public class DatabaseInitializerService {
                                       PaymentMethodRepository paymentMethodRepository,
                                       PaymentRepository paymentRepository) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository; // YENİ EKLENDİ
+        this.roleRepository = roleRepository;
         this.tableRepository = tableRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
@@ -49,41 +45,52 @@ public class DatabaseInitializerService {
     @PostConstruct
     @Transactional
     public void initDatabase() {
-        System.out.println("Veritabanı kontrol ediliyor ve başlatılıyor (Yeni Mimari)...");
+        System.out.println("Veritabanı kontrol ediliyor ve başlatılıyor (Temiz başlangıç)...");
 
-        // --- GÜNCELLENDİ: Veri Ekleme Sırası (Bağımlılık Zinciri) ---
+        // 0) Dinamik verileri tamamen temizle: Ödemeler, Sipariş Kalemleri, Siparişler
+        clearOrdersAndPayments();
 
-        // 1. Bağımsız Veriler (Bizim + Arkadaşın)
-        createDefaultTables(); // Bizim Masalar
-        createDefaultPaymentMethods(); // Bizim Ödeme Yöntemleri
-        createDefaultRoles(); // Arkadaşın Rolleri
+        // 1) Roller
+        createDefaultRoles();
 
-        // 2. 'Roles'e bağımlı
-        createDefaultUsers(); // Arkadaşın Kullanıcıları
+        // 2) Kullanıcılar
+        createDefaultUsers();
 
-        // 3. 'Categories' (Bağımsız)
-        createDefaultCategories(); // Arkadaşın Kategorileri
+        // 3) Kategoriler
+        createDefaultCategories();
 
-        // 4. 'Categories'e bağımlı
-        createDefaultProducts(); // Arkadaşın Ürünleri
+        // 4) Ürünler
+        createDefaultProducts();
 
-        // 5. 'Users', 'Tables', 'Products'a bağımlı (GÜNCELLENMİŞ Test Verisi)
-        createDefaultOrdersAndItems(); // Bizim Test Siparişimiz (Yeni Verilerle)
+        // 5) Ödeme Yöntemleri
+        createDefaultPaymentMethods();
 
-        // 6. 'Order', 'User', 'PaymentMethod'a bağımlı (GÜNCELLENMİŞ Test Verisi)
-        createDefaultPayments(); // Bizim Test Ödememiz (Yeni Verilerle)
+        // 6) Masalar (yoksa oluştur, varsa hepsini BOŞ yap)
+        createOrResetTables();
 
-        System.out.println("Veritabanı başlatma işlemi tamamlandı.");
+        System.out.println("Veritabanı başlatma işlemi tamamlandı (Siparişler BOŞ, Masalar BOŞ).");
     }
 
-    // --- YENİ METOT: Arkadaşınızın 'INSERT INTO Roles' SQL'inin Java çevirisi ---
+    /**
+     * Tüm ödemeleri, sipariş kalemlerini ve siparişleri temizler.
+     * Böylece sistem her açılışta SIFIR sipariş ile başlar.
+     */
+    private void clearOrdersAndPayments() {
+        System.out.println("Siparişler ve ödemeler temizleniyor...");
+
+        // Önce ödemeler (Payment), sonra sipariş kalemleri (OrderItem), sonra sipariş (Order)
+        paymentRepository.deleteAll();
+        orderItemRepository.deleteAll();
+        orderRepository.deleteAll();
+    }
+
     private void createDefaultRoles() {
         if (roleRepository.count() == 0) {
             System.out.println("Varsayılan Roller oluşturuluyor...");
             roleRepository.saveAll(Arrays.asList(
-                    new Role("Admin"),   // Arkadaşınızın verisi
-                    new Role("Garson"),  // Arkadaşınızın verisi
-                    new Role("Kasiyer"),  // Arkadaşınızın verisi
+                    new Role("Admin"),
+                    new Role("Garson"),
+                    new Role("Kasiyer"),
                     new Role("Mutfak")
             ));
         } else {
@@ -91,13 +98,10 @@ public class DatabaseInitializerService {
         }
     }
 
-    // --- GÜNCELLENMİŞ METOT: Arkadaşınızın 'INSERT INTO Users' SQL'inin Java çevirisi ---
     private void createDefaultUsers() {
         if (userRepository.count() == 0) {
             System.out.println("Varsayılan Kullanıcılar oluşturuluyor...");
 
-            // Yeni 'User' sınıfımız 'Role' nesnesi bekliyor.
-            // Önce rolleri veritabanından çekmeliyiz:
             Role adminRole = roleRepository.findByRoleName("Admin").orElse(null);
             Role garsonRole = roleRepository.findByRoleName("Garson").orElse(null);
             Role kasiyerRole = roleRepository.findByRoleName("Kasiyer").orElse(null);
@@ -108,21 +112,18 @@ public class DatabaseInitializerService {
                 return;
             }
 
-            // Arkadaşınızın 'INSERT' SQL'indeki verilerle yeni 'User'lar oluşturma
-            // Yeni Constructor: (username, password, fullName, role, isActive)
             userRepository.saveAll(Arrays.asList(
                     new User("adminuser", "hash_admin123", "Ayşe Yılmaz", adminRole, true),
                     new User("garson01", "hash_garson123", "Mehmet Demir", garsonRole, true),
                     new User("kasiyer02", "hash_kasiyer123", "Zeynep Kaya", kasiyerRole, true),
                     new User("deneme_pasif", "hash_deneme", "Pasif Kullanıcı", garsonRole, false),
-                    new User("mutfak1","mutfak123","sado",mutfakRole,true)
+                    new User("mutfak1", "mutfak123", "sado", mutfakRole, true)
             ));
         } else {
             System.out.println("Kullanıcılar zaten mevcut.");
         }
     }
 
-    // --- GÜNCELLENMİŞ METOT: Arkadaşınızın 'INSERT INTO Categories' SQL'inin Java çevirisi ---
     private void createDefaultCategories() {
         if (categoryRepository.count() == 0) {
             System.out.println("Varsayılan Kategoriler oluşturuluyor...");
@@ -149,12 +150,10 @@ public class DatabaseInitializerService {
         }
     }
 
-    // --- GÜNCELLENMİŞ METOT: Arkadaşınızın 'INSERT INTO Products' SQL'inin Java çevirisi ---
     private void createDefaultProducts() {
         if (productRepository.count() == 0) {
             System.out.println("Varsayılan Ürünler oluşturuluyor...");
 
-            // Kategorileri isimleriyle bulmamız gerekecek
             Category icecekler = categoryRepository.findByCategoryName("İçecekler").orElse(null);
             Category anaYemekler = categoryRepository.findByCategoryName("Ana Yemekler").orElse(null);
             Category tatlilar = categoryRepository.findByCategoryName("Tatlılar").orElse(null);
@@ -215,23 +214,6 @@ public class DatabaseInitializerService {
         }
     }
 
-    // --- DEĞİŞMEYEN METOT (Bizim Test Verimiz) ---
-    private void createDefaultTables() {
-        if (tableRepository.count() == 0) {
-            System.out.println("Varsayılan masalar oluşturuluyor...");
-            tableRepository.saveAll(Arrays.asList(
-                    new Table("Masa 1", Table.STATUS_AVAILABLE),
-                    new Table("Masa 2", Table.STATUS_AVAILABLE), // Başlangıçta 'Boş' olsun
-                    new Table("Masa 3", Table.STATUS_RESERVED),
-                    new Table("Masa 4", Table.STATUS_AVAILABLE),
-                    new Table("Masa 5", Table.STATUS_AVAILABLE)
-            ));
-        } else {
-            System.out.println("Masalar zaten mevcut.");
-        }
-    }
-
-    // --- DEĞİŞMEYEN METOT (Bizim Test Verimiz) ---
     private void createDefaultPaymentMethods() {
         if (paymentMethodRepository.count() == 0) {
             System.out.println("Ödeme Yöntemleri oluşturuluyor...");
@@ -245,89 +227,27 @@ public class DatabaseInitializerService {
         }
     }
 
-    // --- GÜNCELLENMİŞ METOT: Bizim Test Siparişimiz (Arkadaşınızın verileriyle) ---
-    private void createDefaultOrdersAndItems() {
-        if (orderRepository.count() == 0) {
-            System.out.println("Örnek Test Siparişi oluşturuluyor...");
-
-            // Arkadaşınızın yeni verilerini çek
-            // ...
-            User garson = userRepository.findByUsername("garson01").orElse(null);
-            Table masa2 = tableRepository.findByTableName("Masa 2").orElse(null);
-            Product kofte = productRepository.findByProductName("Izgara Köfte").orElse(null);
-            Product kola = productRepository.findByProductName("Kola (Kutu)").orElse(null);
-// ...
-
-            if (garson == null || masa2 == null || kofte == null || kola == null) {
-                System.out.println("HATA: Test Siparişi oluşturmak için gerekli (Kullanıcı, Masa veya Ürün) verileri bulunamadı.");
-                return;
-            }
-
-            Order siparis1 = new Order();
-            siparis1.setTable(masa2);
-            siparis1.setWaiter(garson);
-            siparis1.setOrderStatus("ÖDENDİ"); // Test ödemesi ekleyeceğiz
-            siparis1.setTotalAmount(BigDecimal.ZERO);
-            orderRepository.save(siparis1);
-
-            OrderItem item1 = new OrderItem();
-            item1.setOrder(siparis1);
-            item1.setProduct(kofte); // Eski: İşkembe
-            item1.setQuantity(2); // 2 x 120.00 = 240.00
-            item1.setPriceAtOrder(kofte.getBasePrice());
-            item1.setItemNotes("İyi pişmiş");
-            item1.setKitchenStatus("hazır");
-            item1.setServed(true);
-
-            OrderItem item2 = new OrderItem();
-            item2.setOrder(siparis1);
-            item2.setProduct(kola); // Eski: Kola
-            item2.setQuantity(1); // 1 x 25.00 = 25.00
-            item2.setPriceAtOrder(kola.getBasePrice());
-            item2.setItemNotes("");
-            item2.setKitchenStatus("hazır");
-            item2.setServed(true);
-
-            orderItemRepository.saveAll(Arrays.asList(item1, item2));
-
-            // Toplam Tutar (BigDecimal): (2 * 120.00) + (1 * 25.00) = 265.00
-            BigDecimal toplam = kofte.getBasePrice().multiply(new BigDecimal(item1.getQuantity()))
-                    .add(kola.getBasePrice().multiply(new BigDecimal(item2.getQuantity())));
-
-            siparis1.setTotalAmount(toplam);
-            orderRepository.save(siparis1);
-
-            // Masayı da 'Dolu' yapalım, çünkü sipariş 'ÖDENDİ' olsa da verisi orada
-            masa2.setStatus(Table.STATUS_OCCUPIED);
-            tableRepository.save(masa2);
+    /**
+     * Masalar yoksa oluşturur, varsa HEPSİNİ 'Boş' (STATUS_AVAILABLE) yapar.
+     * Böylece sistem her açılışta tüm masalar boş başlar.
+     */
+    private void createOrResetTables() {
+        if (tableRepository.count() == 0) {
+            System.out.println("Varsayılan masalar oluşturuluyor...");
+            tableRepository.saveAll(Arrays.asList(
+                    new Table("Masa 1", Table.STATUS_AVAILABLE),
+                    new Table("Masa 2", Table.STATUS_AVAILABLE),
+                    new Table("Masa 3", Table.STATUS_RESERVED),
+                    new Table("Masa 4", Table.STATUS_AVAILABLE),
+                    new Table("Masa 5", Table.STATUS_AVAILABLE)
+            ));
         } else {
-            System.out.println("Siparişler zaten mevcut.");
-        }
-    }
+            System.out.println("Masalar zaten mevcut. DURUMLAR RESETLENİYOR (Hepsi BOŞ)...");
 
-    // --- GÜNCELLENMİŞ METOT: Bizim Test Ödememiz (Arkadaşınızın verileriyle) ---
-    private void createDefaultPayments() {
-        if (paymentRepository.count() == 0) {
-            System.out.println("Örnek Test Ödemesi oluşturuluyor...");
-
-            Order siparis1 = orderRepository.findAll().get(0);
-            User kasiyer = userRepository.findByUsername("kasiyer02").orElse(null); // Eski: 'kasa'
-            PaymentMethod nakitYontemi = paymentMethodRepository.findAll().get(0);
-
-            if (siparis1 == null || kasiyer == null || nakitYontemi == null) {
-                System.out.println("HATA: Test Ödemesi oluşturmak için gerekli (Sipariş, Kasiyer veya Yöntem) verileri bulunamadı.");
-                return;
-            }
-
-            Payment odeme1 = new Payment();
-            odeme1.setOrder(siparis1);
-            odeme1.setPaymentMethod(nakitYontemi);
-            odeme1.setCashier(kasiyer); // Yeni 'kasiyer02'
-            odeme1.setAmountPaid(siparis1.getTotalAmount()); // 265.00
-
-            paymentRepository.save(odeme1);
-        } else {
-            System.out.println("Ödemeler zaten mevcut.");
+            tableRepository.findAll().forEach(t -> {
+                t.setStatus(Table.STATUS_AVAILABLE);
+                tableRepository.save(t);
+            });
         }
     }
 }

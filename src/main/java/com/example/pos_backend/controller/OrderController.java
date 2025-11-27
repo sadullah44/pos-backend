@@ -83,5 +83,8 @@ public class OrderController {
         // (Beyin) metoduyla EŞLEŞİR)
         return orderService.addOrderItemToOrder(orderId, request);
     }
-    // --- DÜZELTME BİTTİ ---
+    @GetMapping("/masa/{tableId}")
+    public Order getOrderByTable(@PathVariable Long tableId) {
+        return orderService.getActiveOrderByTableId(tableId);
+    }
 }

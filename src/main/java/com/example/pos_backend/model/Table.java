@@ -17,9 +17,9 @@ public class Table {
     // Eski 'capacity' alanı sizin yeni listenizde olmadığı için kaldırıldı.
 
     // Statik sabitler (Bunlar kalabilir, kullanışlıdır)
-    public static final String STATUS_AVAILABLE = "Boş";
-    public static final String STATUS_OCCUPIED = "Dolu";
-    public static final String STATUS_RESERVED = "Rezerve";
+    public static final String STATUS_AVAILABLE = "BOŞ";
+    public static final String STATUS_OCCUPIED = "DOLU";
+    public static final String STATUS_RESERVED = "REZERVE";
 
     // JPA için boş constructor
     public Table() {
