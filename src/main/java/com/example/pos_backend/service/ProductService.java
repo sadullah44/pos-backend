@@ -1,10 +1,12 @@
 // Paket adınız (örn: com.example.pos_backend.service)
 package com.example.pos_backend.service;
 
+import com.example.pos_backend.dto.AddProductRequest;
 import com.example.pos_backend.model.Category; // <-- 1. YENİ İMPORT
 import com.example.pos_backend.model.Product;
 import com.example.pos_backend.repository.CategoryRepository; // <-- 2. YENİ İMPORT
 import com.example.pos_backend.repository.ProductRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -51,4 +53,23 @@ public class ProductService {
         // düzelteceğiz)
         return productRepository.findByCategory(category);
     }
+    // YENİ METOT: Ürün Ekleme
+    @Transactional
+    public Product addProduct(AddProductRequest request) {
+        // 1. Kategoriyi Bul
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Kategori bulunamadı!"));
+
+        // 2. Yeni Ürünü Oluştur
+        Product newProduct = new Product();
+        newProduct.setProductName(request.getProductName());
+        newProduct.setBasePrice(request.getBasePrice());
+        newProduct.setCategory(category); // İlişkiyi kur
+        newProduct.setAvailable(true);    // Varsayılan olarak satışta
+        newProduct.setKitchenItem(true);  // Varsayılan olarak mutfak ürünü
+
+        // 3. Kaydet ve Döndür
+        return productRepository.save(newProduct);
+    }
+
 }

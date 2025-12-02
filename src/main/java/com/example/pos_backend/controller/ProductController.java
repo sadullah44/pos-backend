@@ -1,6 +1,7 @@
 // Paket adınız (örn: com.example.pos_backend.controller)
 package com.example.pos_backend.controller;
 
+import com.example.pos_backend.dto.AddProductRequest;
 import com.example.pos_backend.model.Product;
 import com.example.pos_backend.service.ProductService; // "Ürün Beyni"ni import et
 import org.springframework.web.bind.annotation.*;
@@ -49,5 +50,10 @@ public class ProductController {
         return productService.getProductsByCategoryId(kategoriId);
     }
     // --- DÜZELTME BİTTİ ---
+    @PostMapping("/ekle")
+    public Product addProduct(@RequestBody AddProductRequest request) {
+        return productService.addProduct(request);
+    }
+
 
 }

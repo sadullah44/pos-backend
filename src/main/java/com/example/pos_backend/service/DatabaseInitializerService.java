@@ -17,73 +17,41 @@ public class DatabaseInitializerService {
     private final TableRepository tableRepository;
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
-    private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
     private final PaymentMethodRepository paymentMethodRepository;
-    private final PaymentRepository paymentRepository;
 
     public DatabaseInitializerService(UserRepository userRepository,
                                       RoleRepository roleRepository,
                                       TableRepository tableRepository,
                                       CategoryRepository categoryRepository,
                                       ProductRepository productRepository,
-                                      OrderRepository orderRepository,
-                                      OrderItemRepository orderItemRepository,
-                                      PaymentMethodRepository paymentMethodRepository,
-                                      PaymentRepository paymentRepository) {
+                                      PaymentMethodRepository paymentMethodRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.tableRepository = tableRepository;
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
         this.paymentMethodRepository = paymentMethodRepository;
-        this.paymentRepository = paymentRepository;
     }
 
     @PostConstruct
     @Transactional
     public void initDatabase() {
-        System.out.println("Veritabanı kontrol ediliyor ve başlatılıyor (Temiz başlangıç)...");
+        System.out.println("Veritabanı kontrol ediliyor ve başlatılıyor...");
 
-        // 0) Dinamik verileri tamamen temizle: Ödemeler, Sipariş Kalemleri, Siparişler
-        clearOrdersAndPayments();
+        // ❌ ARTIK SİPARİŞ / ÖDEME TEMİZLİĞİ YOK
+        // clearOrdersAndPayments();
 
-        // 1) Roller
         createDefaultRoles();
-
-        // 2) Kullanıcılar
         createDefaultUsers();
-
-        // 3) Kategoriler
         createDefaultCategories();
-
-        // 4) Ürünler
         createDefaultProducts();
-
-        // 5) Ödeme Yöntemleri
         createDefaultPaymentMethods();
 
-        // 6) Masalar (yoksa oluştur, varsa hepsini BOŞ yap)
-        createOrResetTables();
-
-        System.out.println("Veritabanı başlatma işlemi tamamlandı (Siparişler BOŞ, Masalar BOŞ).");
+        // ✅ Masaları sadece YOKSA oluştur (reset yok)
+        createTablesIfNotExist();
     }
 
-    /**
-     * Tüm ödemeleri, sipariş kalemlerini ve siparişleri temizler.
-     * Böylece sistem her açılışta SIFIR sipariş ile başlar.
-     */
-    private void clearOrdersAndPayments() {
-        System.out.println("Siparişler ve ödemeler temizleniyor...");
-
-        // Önce ödemeler (Payment), sonra sipariş kalemleri (OrderItem), sonra sipariş (Order)
-        paymentRepository.deleteAll();
-        orderItemRepository.deleteAll();
-        orderRepository.deleteAll();
-    }
-
+    // --- Roller ---
     private void createDefaultRoles() {
         if (roleRepository.count() == 0) {
             System.out.println("Varsayılan Roller oluşturuluyor...");
@@ -98,6 +66,7 @@ public class DatabaseInitializerService {
         }
     }
 
+    // --- Kullanıcılar ---
     private void createDefaultUsers() {
         if (userRepository.count() == 0) {
             System.out.println("Varsayılan Kullanıcılar oluşturuluyor...");
@@ -124,6 +93,7 @@ public class DatabaseInitializerService {
         }
     }
 
+    // --- Kategoriler ---
     private void createDefaultCategories() {
         if (categoryRepository.count() == 0) {
             System.out.println("Varsayılan Kategoriler oluşturuluyor...");
@@ -150,6 +120,7 @@ public class DatabaseInitializerService {
         }
     }
 
+    // --- Ürünler ---
     private void createDefaultProducts() {
         if (productRepository.count() == 0) {
             System.out.println("Varsayılan Ürünler oluşturuluyor...");
@@ -214,6 +185,7 @@ public class DatabaseInitializerService {
         }
     }
 
+    // --- Ödeme Yöntemleri ---
     private void createDefaultPaymentMethods() {
         if (paymentMethodRepository.count() == 0) {
             System.out.println("Ödeme Yöntemleri oluşturuluyor...");
@@ -227,11 +199,8 @@ public class DatabaseInitializerService {
         }
     }
 
-    /**
-     * Masalar yoksa oluşturur, varsa HEPSİNİ 'Boş' (STATUS_AVAILABLE) yapar.
-     * Böylece sistem her açılışta tüm masalar boş başlar.
-     */
-    private void createOrResetTables() {
+    // --- Masalar: sadece YOKSA oluştur ---
+    private void createTablesIfNotExist() {
         if (tableRepository.count() == 0) {
             System.out.println("Varsayılan masalar oluşturuluyor...");
             tableRepository.saveAll(Arrays.asList(
@@ -242,12 +211,7 @@ public class DatabaseInitializerService {
                     new Table("Masa 5", Table.STATUS_AVAILABLE)
             ));
         } else {
-            System.out.println("Masalar zaten mevcut. DURUMLAR RESETLENİYOR (Hepsi BOŞ)...");
-
-            tableRepository.findAll().forEach(t -> {
-                t.setStatus(Table.STATUS_AVAILABLE);
-                tableRepository.save(t);
-            });
+            System.out.println("Masalar zaten mevcut. Reset YAPILMIYOR.");
         }
     }
 }
