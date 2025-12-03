@@ -33,7 +33,10 @@ public class OrderItem {
 
     // --- ESKİ SÜRÜM: sadece served alanı vardı ---
     @Column(nullable = false)
-    private boolean served = false;
+    private boolean isServed = false;
+    @Column(nullable = false)
+    private String kitchenStatus = "BEKLIYOR";  // BEKLIYOR, HAZIRLANIYOR, HAZIR
+
 
     public OrderItem() {
     }
@@ -56,8 +59,11 @@ public class OrderItem {
     public String getItemNotes() { return itemNotes; }
     public void setItemNotes(String itemNotes) { this.itemNotes = itemNotes; }
 
-    public boolean isServed() { return served; }
-    public void setServed(boolean served) { this.served = served; }
+    public boolean getIsServed() { return isServed; }
+    public void setIsServed(boolean isServed) { this.isServed = isServed; }
+    public String getKitchenStatus() { return kitchenStatus; }
+    public void setKitchenStatus(String kitchenStatus) { this.kitchenStatus = kitchenStatus; }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

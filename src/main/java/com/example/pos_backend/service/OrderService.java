@@ -89,6 +89,8 @@ public class OrderService {
         newItem.setQuantity(request.getQuantity());
         newItem.setItemNotes(request.getItemNotes());
         newItem.setPriceAtOrder(product.getBasePrice());
+        newItem.setKitchenStatus("BEKLIYOR");
+        newItem.setIsServed(false);
 
         order.getOrderItems().add(newItem);
 
