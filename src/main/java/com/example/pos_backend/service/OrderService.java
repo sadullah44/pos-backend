@@ -105,4 +105,34 @@ public class OrderService {
         return orderRepository.findFirstByTable_TableIDAndOrderStatusNot(tableId, "ÖDENDİ")
                 .orElse(null);
     }
+    @Transactional
+    public Order removeOrderItem(Long orderId, Long orderItemId) {
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Sipariş bulunamadı: " + orderId));
+
+        OrderItem item = orderItemRepository.findById(orderItemId)
+                .orElseThrow(() -> new EntityNotFoundException("Ürün bulunamadı: " + orderItemId));
+
+        // Siparişe ait değilse engelle
+        if (!item.getOrder().getOrderID().equals(orderId)) {
+            throw new IllegalStateException("Bu ürün belirtilen siparişe ait değil!");
+        }
+
+        // 1) Ürünü sipariş listesinden çıkar
+        order.getOrderItems().remove(item);
+
+        // 2) Ürünü fiziksel olarak DB'den sil
+        orderItemRepository.delete(item);
+
+        // 3) Toplam tutarı yeniden hesapla
+        BigDecimal newTotal = order.getOrderItems().stream()
+                .map(i -> i.getPriceAtOrder().multiply(new BigDecimal(i.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        order.setTotalAmount(newTotal);
+
+        return orderRepository.save(order);
+    }
+
 }

@@ -54,4 +54,12 @@ public class OrderController {
     public Order getOrderByTable(@PathVariable Long tableId) {
         return orderService.getActiveOrderByTableId(tableId);
     }
+    @DeleteMapping("/{orderId}/urun/{orderItemId}")
+    public Order removeOrderItem(
+            @PathVariable Long orderId,
+            @PathVariable Long orderItemId
+    ) {
+        return orderService.removeOrderItem(orderId, orderItemId);
+    }
+
 }

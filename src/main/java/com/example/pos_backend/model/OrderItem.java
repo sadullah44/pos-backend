@@ -58,4 +58,17 @@ public class OrderItem {
 
     public boolean isServed() { return served; }
     public void setServed(boolean served) { this.served = served; }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof OrderItem)) return false;
+        OrderItem other = (OrderItem) o;
+        return orderItemId != null && orderItemId.equals(other.orderItemId);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31;
+    }
+
 }
