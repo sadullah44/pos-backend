@@ -71,9 +71,24 @@ public class OrderService {
     public Order updateOrderStatus(Long orderID, String yeniDurum) {
         Order order = getOrderById(orderID);
         order.setOrderStatus(yeniDurum);
+
+        // --- EKLENEN KISIM BAŞLANGIÇ ---
+        // Eğer siparişin genel durumu "HAZIR" yapıldıysa,
+        // içindeki tüm ürünlerin durumunu da "HAZIR" yap.
+        // Böylece garson yeni ürün eklediğinde eskiler tekrar mutfağa düşmez.
+        if ("HAZIR".equals(yeniDurum)) {
+            if (order.getOrderItems() != null) {
+                for (OrderItem item : order.getOrderItems()) {
+                    item.setKitchenStatus("HAZIR");
+                }
+            }
+        }
+        // --- EKLENEN KISIM BİTİŞ ---
+
         return orderRepository.save(order);
     }
 
+    // 1. MEVCUT METODU GÜNCELLE: Ürün eklenince 'BEKLIYOR' değil 'YENI' olsun.
     @Transactional
     public Order addOrderItemToOrder(Long orderId, AddOrderItemRequest request) {
 
@@ -89,16 +104,48 @@ public class OrderService {
         newItem.setQuantity(request.getQuantity());
         newItem.setItemNotes(request.getItemNotes());
         newItem.setPriceAtOrder(product.getBasePrice());
-        newItem.setKitchenStatus("BEKLIYOR");
+
+        // --- DEĞİŞİKLİK BURADA ---
+        // Eskiden: newItem.setKitchenStatus("BEKLIYOR");
+        // Yeni:
+        newItem.setKitchenStatus("YENI");
+        // -------------------------
+
         newItem.setIsServed(false);
 
         order.getOrderItems().add(newItem);
 
+        // Fiyat hesaplama mantığın aynı kalıyor
         BigDecimal total = order.getOrderItems().stream()
                 .map(item -> item.getPriceAtOrder().multiply(new BigDecimal(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         order.setTotalAmount(total);
+
+        return orderRepository.save(order);
+    }
+    // 2. YENİ METOD EKLE: Sadece yeni eklenenleri mutfağa bildir
+    @Transactional
+    public Order sendOrderToKitchen(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Sipariş bulunamadı: " + orderId));
+
+        List<OrderItem> items = order.getOrderItems();
+        boolean yeniUrunVarMi = false;
+
+        for (OrderItem item : items) {
+            // Sadece durumu "YENI" olanları "BEKLIYOR" yap
+            if ("YENI".equals(item.getKitchenStatus())) {
+                item.setKitchenStatus("BEKLIYOR");
+                yeniUrunVarMi = true;
+            }
+            // HAZIR, HAZIRLANIYOR veya BEKLIYOR olanlara ASLA DOKUNMA!
+        }
+
+        // Eğer yeni ürün eklendiyse siparişin genel durumu da aktif olsun
+        if (yeniUrunVarMi) {
+            order.setOrderStatus("HAZIRLANIYOR");
+        }
 
         return orderRepository.save(order);
     }

@@ -61,5 +61,11 @@ public class OrderController {
     ) {
         return orderService.removeOrderItem(orderId, orderItemId);
     }
+    // OrderController.java İÇİNE EKLE
 
+    // Garson "Siparişi Mutfağa Gönder" butonuna bastığında burası çalışacak
+    @PostMapping("/{orderId}/mutfaga-gonder")
+    public Order confirmOrderToKitchen(@PathVariable Long orderId) {
+        return orderService.sendOrderToKitchen(orderId);
+    }
 }

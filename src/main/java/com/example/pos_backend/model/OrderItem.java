@@ -35,7 +35,7 @@ public class OrderItem {
     @Column(nullable = false)
     private boolean isServed = false;
     @Column(nullable = false)
-    private String kitchenStatus = "BEKLIYOR";  // BEKLIYOR, HAZIRLANIYOR, HAZIR
+    private String kitchenStatus = "YENI";  // BEKLIYOR, HAZIRLANIYOR, HAZIR
 
 
     public OrderItem() {
