@@ -131,20 +131,39 @@ public class OrderService {
                 .orElseThrow(() -> new EntityNotFoundException("Sipariş bulunamadı: " + orderId));
 
         List<OrderItem> items = order.getOrderItems();
-        boolean yeniUrunVarMi = false;
+        boolean mutfagaGidenUrunVarMi = false;
 
         for (OrderItem item : items) {
-            // Sadece durumu "YENI" olanları "BEKLIYOR" yap
+            // Sadece yeni eklenen ürünleri işle
             if ("YENI".equals(item.getKitchenStatus())) {
-                item.setKitchenStatus("BEKLIYOR");
-                yeniUrunVarMi = true;
+
+                // --- KONTROL BURADA ---
+                // Ürünün 'isKitchenItem' (mutfak ürünü mü?) özelliğine bakıyoruz.
+                // Product modelinde bu alanın getter metodunun adı 'isKitchenItem' veya 'getKitchenItem' olabilir.
+                // Genellikle boolean olduğu için 'isKitchenItem()' kullanılır.
+
+                if (item.getProduct() != null && Boolean.TRUE.equals(item.getProduct().isKitchenItem())) {
+
+                    // Eğer Yemek ise -> Mutfağa gönder (BEKLIYOR)
+                    item.setKitchenStatus("BEKLIYOR");
+                    mutfagaGidenUrunVarMi = true;
+
+                } else {
+
+                    // Eğer İçecek ise -> Direkt HAZIR yap.
+                    // Böylece Android tarafındaki filtremiz (HAZIR olanları gizle) sayesinde ekranda görünmez.
+                    item.setKitchenStatus("HAZIR");
+                }
             }
-            // HAZIR, HAZIRLANIYOR veya BEKLIYOR olanlara ASLA DOKUNMA!
         }
 
-        // Eğer yeni ürün eklendiyse siparişin genel durumu da aktif olsun
-        if (yeniUrunVarMi) {
+        // Eğer mutfağa en az bir yemek gittiyse sipariş durumu 'HAZIRLANIYOR' olsun.
+        // Sadece içecek sipariş edildiyse sipariş durumu değişmesin veya direkt 'HAZIR' olsun.
+        if (mutfagaGidenUrunVarMi) {
             order.setOrderStatus("HAZIRLANIYOR");
+        } else {
+            // Opsiyonel: Eğer sadece içecek varsa ve hepsi hazırlandıysa siparişi de HAZIR yapabilirsin.
+            // order.setOrderStatus("HAZIR");
         }
 
         return orderRepository.save(order);
