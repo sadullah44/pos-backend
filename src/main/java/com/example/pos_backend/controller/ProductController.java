@@ -54,6 +54,16 @@ public class ProductController {
     public Product addProduct(@RequestBody AddProductRequest request) {
         return productService.addProduct(request);
     }
+    // GÜNCELLEME İSTEĞİ (PUT)
+    @PutMapping("/{id}")
+    public Product updateProduct(@PathVariable Long id, @RequestBody AddProductRequest request) {
+        return productService.updateProduct(id, request);
+    }
 
+    // SİLME İSTEĞİ (DELETE)
+    @DeleteMapping("/{id}")
+    public void deleteProduct(@PathVariable Long id) {
+        productService.deleteProduct(id);
+    }
 
 }

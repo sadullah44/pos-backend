@@ -6,6 +6,7 @@ import com.example.pos_backend.model.Category; // <-- 1. YENİ İMPORT
 import com.example.pos_backend.model.Product;
 import com.example.pos_backend.repository.CategoryRepository; // <-- 2. YENİ İMPORT
 import com.example.pos_backend.repository.ProductRepository;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -70,6 +71,42 @@ public class ProductService {
 
         // 3. Kaydet ve Döndür
         return productRepository.save(newProduct);
+    }
+    // --- ÜRÜN GÜNCELLEME ---
+    @Transactional
+    public Product updateProduct(Long productId, AddProductRequest request) {
+        // 1. Güncellenecek ürünü bul
+        Product existingProduct = productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("Ürün bulunamadı: " + productId));
+
+        // 2. Yeni kategoriyi bul (Eğer kategori değiştiyse)
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new EntityNotFoundException("Kategori bulunamadı: " + request.getCategoryId()));
+
+        // 3. Verileri Güncelle
+        existingProduct.setProductName(request.getProductName());
+        existingProduct.setBasePrice(request.getBasePrice());
+        existingProduct.setCategory(category);
+
+        // Mutfak ürünü mü değil mi güncellemek istersen request'e o alanı da ekleyip buraya yazabilirsin.
+        // existingProduct.setKitchenItem(request.isKitchenItem());
+
+        // 4. Kaydet
+        return productRepository.save(existingProduct);
+    }
+
+    // --- ÜRÜN SİLME ---
+    @Transactional
+    public void deleteProduct(Long productId) {
+        // Ürün var mı kontrol et
+        if (!productRepository.existsById(productId)) {
+            throw new EntityNotFoundException("Silinecek ürün bulunamadı: " + productId);
+        }
+
+        // DİKKAT: Eğer bu ürün geçmiş siparişlerde kullanıldıysa,
+        // veritabanı "Foreign Key Constraint" hatası verebilir.
+        // Basit çözüm: Direkt silmektir. (Hata alırsan catch bloğu ekleriz)
+        productRepository.deleteById(productId);
     }
 
 }
