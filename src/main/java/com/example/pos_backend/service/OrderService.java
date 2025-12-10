@@ -42,9 +42,9 @@ public class OrderService {
         User waiter = userRepository.findById(waiterID)
                 .orElseThrow(() -> new EntityNotFoundException("Garson bulunamadı: " + waiterID));
 
-        if (!table.getStatus().equals(Table.STATUS_AVAILABLE)) {
-            throw new IllegalStateException("Bu masada zaten aktif sipariş var.");
-        }
+        // Not: Masa durumunu burada kontrol etmiyoruz çünkü garson masaya
+        // tıkladığı an masa DOLU oluyor ama sipariş henüz oluşmamış olabilir.
+        // O yüzden bu kontrolü kaldırdık veya esnettik.
 
         Order newOrder = new Order();
         newOrder.setTable(table);
@@ -52,7 +52,7 @@ public class OrderService {
         newOrder.setOrderStatus("BEKLEMEDE");
         newOrder.setTotalAmount(BigDecimal.ZERO);
 
-        table.setStatus(Table.STATUS_OCCUPIED);
+        table.setStatus("DOLU"); // Sipariş oluşunca masa kesin dolu olsun
         tableRepository.save(table);
 
         return orderRepository.save(newOrder);
@@ -67,15 +67,13 @@ public class OrderService {
                 .orElseThrow(() -> new EntityNotFoundException("Sipariş bulunamadı: " + orderID));
     }
 
+    // --- SİPARİŞ DURUMU GÜNCELLEME (GÜNCELLENDİ) ---
     @Transactional
     public Order updateOrderStatus(Long orderID, String yeniDurum) {
         Order order = getOrderById(orderID);
         order.setOrderStatus(yeniDurum);
 
-        // --- EKLENEN KISIM BAŞLANGIÇ ---
-        // Eğer siparişin genel durumu "HAZIR" yapıldıysa,
-        // içindeki tüm ürünlerin durumunu da "HAZIR" yap.
-        // Böylece garson yeni ürün eklediğinde eskiler tekrar mutfağa düşmez.
+        // SENARYO 1: Sipariş Mutfakta HAZIR oldu
         if ("HAZIR".equals(yeniDurum)) {
             if (order.getOrderItems() != null) {
                 for (OrderItem item : order.getOrderItems()) {
@@ -83,12 +81,20 @@ public class OrderService {
                 }
             }
         }
-        // --- EKLENEN KISIM BİTİŞ ---
+
+        // SENARYO 2: Sipariş ÖDENDİ (Kasiyer işlemi) -> MASA BOŞ OLSUN
+        if ("ODENDI".equals(yeniDurum) || "KAPANDI".equals(yeniDurum)) {
+            Table table = order.getTable();
+            if (table != null) {
+                table.setStatus("BOŞ"); // Masayı otomatik boşalt
+                tableRepository.save(table);
+            }
+        }
 
         return orderRepository.save(order);
     }
 
-    // 1. MEVCUT METODU GÜNCELLE: Ürün eklenince 'BEKLIYOR' değil 'YENI' olsun.
+    // Ürün ekleme
     @Transactional
     public Order addOrderItemToOrder(Long orderId, AddOrderItemRequest request) {
 
@@ -104,18 +110,11 @@ public class OrderService {
         newItem.setQuantity(request.getQuantity());
         newItem.setItemNotes(request.getItemNotes());
         newItem.setPriceAtOrder(product.getBasePrice());
-
-        // --- DEĞİŞİKLİK BURADA ---
-        // Eskiden: newItem.setKitchenStatus("BEKLIYOR");
-        // Yeni:
-        newItem.setKitchenStatus("YENI");
-        // -------------------------
-
+        newItem.setKitchenStatus("YENI"); // Yeni eklenen ürün YENI statüsünde
         newItem.setIsServed(false);
 
         order.getOrderItems().add(newItem);
 
-        // Fiyat hesaplama mantığın aynı kalıyor
         BigDecimal total = order.getOrderItems().stream()
                 .map(item -> item.getPriceAtOrder().multiply(new BigDecimal(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -124,7 +123,8 @@ public class OrderService {
 
         return orderRepository.save(order);
     }
-    // 2. YENİ METOD EKLE: Sadece yeni eklenenleri mutfağa bildir
+
+    // Mutfağa gönderme
     @Transactional
     public Order sendOrderToKitchen(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -134,45 +134,48 @@ public class OrderService {
         boolean mutfagaGidenUrunVarMi = false;
 
         for (OrderItem item : items) {
-            // Sadece yeni eklenen ürünleri işle
             if ("YENI".equals(item.getKitchenStatus())) {
-
-                // --- KONTROL BURADA ---
-                // Ürünün 'isKitchenItem' (mutfak ürünü mü?) özelliğine bakıyoruz.
-                // Product modelinde bu alanın getter metodunun adı 'isKitchenItem' veya 'getKitchenItem' olabilir.
-                // Genellikle boolean olduğu için 'isKitchenItem()' kullanılır.
-
+                // Yemekse -> BEKLIYOR, İçecekse -> HAZIR
                 if (item.getProduct() != null && Boolean.TRUE.equals(item.getProduct().isKitchenItem())) {
-
-                    // Eğer Yemek ise -> Mutfağa gönder (BEKLIYOR)
                     item.setKitchenStatus("BEKLIYOR");
                     mutfagaGidenUrunVarMi = true;
-
                 } else {
-
-                    // Eğer İçecek ise -> Direkt HAZIR yap.
-                    // Böylece Android tarafındaki filtremiz (HAZIR olanları gizle) sayesinde ekranda görünmez.
                     item.setKitchenStatus("HAZIR");
                 }
             }
         }
 
-        // Eğer mutfağa en az bir yemek gittiyse sipariş durumu 'HAZIRLANIYOR' olsun.
-        // Sadece içecek sipariş edildiyse sipariş durumu değişmesin veya direkt 'HAZIR' olsun.
         if (mutfagaGidenUrunVarMi) {
             order.setOrderStatus("HAZIRLANIYOR");
-        } else {
-            // Opsiyonel: Eğer sadece içecek varsa ve hepsi hazırlandıysa siparişi de HAZIR yapabilirsin.
-            // order.setOrderStatus("HAZIR");
         }
 
         return orderRepository.save(order);
     }
 
+    // --- AKTİF SİPARİŞİ GETİR (GÜVENLİ FİLTRELEME) ---
     public Order getActiveOrderByTableId(Long tableId) {
-        return orderRepository.findFirstByTable_TableIDAndOrderStatusNot(tableId, "ODENDİ")
-                .orElse(null);
+        // 1. O masaya ait tüm siparişleri çek
+        List<Order> orders = orderRepository.findByTable_TableID(tableId);
+
+        // 2. Listeyi kontrol et
+        for (Order order : orders) {
+            String status = order.getOrderStatus();
+
+            // 3. SADECE AKTİF DURUMLARI KABUL ET (Whitelist)
+            if ("YENI".equals(status) ||
+                    "BEKLIYOR".equals(status) ||
+                    "HAZIRLANIYOR".equals(status) ||
+                    "HAZIR".equals(status) ||
+                    "ODEME_BEKLIYOR".equals(status) ||
+                    "BEKLEMEDE".equals(status)) { // "BEKLEMEDE"yi de ekledik
+
+                return order; // Aktif siparişi bulduk
+            }
+        }
+
+        return null; // Hiç aktif sipariş yok
     }
+
     @Transactional
     public Order removeOrderItem(Long orderId, Long orderItemId) {
 
@@ -182,18 +185,13 @@ public class OrderService {
         OrderItem item = orderItemRepository.findById(orderItemId)
                 .orElseThrow(() -> new EntityNotFoundException("Ürün bulunamadı: " + orderItemId));
 
-        // Siparişe ait değilse engelle
         if (!item.getOrder().getOrderID().equals(orderId)) {
             throw new IllegalStateException("Bu ürün belirtilen siparişe ait değil!");
         }
 
-        // 1) Ürünü sipariş listesinden çıkar
         order.getOrderItems().remove(item);
-
-        // 2) Ürünü fiziksel olarak DB'den sil
         orderItemRepository.delete(item);
 
-        // 3) Toplam tutarı yeniden hesapla
         BigDecimal newTotal = order.getOrderItems().stream()
                 .map(i -> i.getPriceAtOrder().multiply(new BigDecimal(i.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -202,26 +200,23 @@ public class OrderService {
 
         return orderRepository.save(order);
     }
-    // Backend -> OrderService.java
 
     @Transactional
     public void deleteOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Sipariş bulunamadı"));
 
-        // --- DEĞİŞİKLİK BURADA ---
-        // Şu kısmı SİLİYORUZ veya YORUMA ALIYORUZ.
-        // Sipariş silinse bile masa DOLU kalmalı (Garson manuel boşaltana kadar).
-
-        /* Table table = order.getTable();
+        // Sipariş silindiğinde masayı otomatik BOŞ YAPMIYORUZ.
+        // Garson "Masayı Boşa Çıkar" diyene kadar veya yeni sipariş girene kadar DOLU kalabilir.
+        // (Eğer sipariş silinince masa boşalsın istersen aşağıdaki yorumu açabilirsin)
+        /*
+        Table table = order.getTable();
         if (table != null) {
             table.setStatus("BOŞ");
             tableRepository.save(table);
         }
         */
 
-        // Sadece siparişi siliyoruz
         orderRepository.delete(order);
     }
-
 }
