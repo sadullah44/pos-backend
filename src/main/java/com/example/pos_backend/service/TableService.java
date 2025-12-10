@@ -1,59 +1,70 @@
-package com.example.pos_backend.service; // Paket adınızın bu olduğundan emin olun
+package com.example.pos_backend.service;
 
+import com.example.pos_backend.model.Order;
 import com.example.pos_backend.model.Table;
+import com.example.pos_backend.repository.OrderRepository; // EKLENDİ
 import com.example.pos_backend.repository.TableRepository;
-import jakarta.persistence.EntityNotFoundException; // Hata için import
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Service // Bu sınıfın bir "Servis" (Beyin) katmanı olduğunu Spring'e bildirir.
+@Service
+@Transactional
 public class TableService {
 
-    private final TableRepository tableRepository; // Müteahhit
+    private final TableRepository tableRepository;
+    private final OrderRepository orderRepository; // EKLENDİ: Siparişleri kontrol etmek için
 
-    // Servis, konuşacağı 'Repository' (müteahhit) olmadan çalışamaz.
-    // @Autowired ile Spring'den 'TableRepository'nin bir kopyasını istiyoruz.
     @Autowired
-    public TableService(TableRepository tableRepository) {
+    public TableService(TableRepository tableRepository, OrderRepository orderRepository) {
         this.tableRepository = tableRepository;
+        this.orderRepository = orderRepository;
     }
 
-    /**
-     * Tüm masaları getiren metot.
-     * (Bu, /masalar endpoint'imizin yeni beyni olacak)
-     */
     public List<Table> getAllTables() {
-        return tableRepository.findAll();
+        List<Table> tables = tableRepository.findAll();
+
+        // --- OTOMATİK DÜZELTME MEKANİZMASI ---
+        for (Table table : tables) {
+            boolean isReallyOccupied = checkIfTableHasActiveOrder(table.getTableID());
+
+            // Gerçek durum ne olmalı?
+            String realStatus = isReallyOccupied ? "DOLU" : "BOŞ";
+
+            // Eğer veritabanındaki durum yanlışsa, düzelt ve kaydet
+            if (!realStatus.equalsIgnoreCase(table.getStatus())) {
+                table.setStatus(realStatus);
+                tableRepository.save(table);
+            }
+        }
+        return tables;
     }
 
-    /**
-     * SENARYO 2 İÇİN YENİ METOT:
-     * Bir masanın durumunu güncelleyen iş mantığı.
-     * @Transactional: Bu metot bir veritabanı işlemi yapacak demektir.
-     */
+    // Masada aktif (kapanmamış) sipariş var mı?
+    private boolean checkIfTableHasActiveOrder(Long tableId) {
+        // OrderRepository'de findByTable_TableID metodunun olduğundan emin ol
+        List<Order> orders = orderRepository.findByTable_TableID(tableId);
+
+        for (Order order : orders) {
+            String s = order.getOrderStatus();
+            // Bu durumlardan biri varsa masa doludur
+            if ("YENI".equals(s) || "BEKLIYOR".equals(s) || "HAZIRLANIYOR".equals(s) ||
+                    "HAZIR".equals(s) || "ODEME_BEKLIYOR".equals(s) || "BEKLEMEDE".equals(s)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Transactional
     public Table updateTableStatus(Long tableID, String newStatus) {
-
-        // 1. Masayı ID ile veritabanında bul.
-        //    orElseThrow: Eğer masa bulunamazsa, hata fırlat.
         Table tableToUpdate = tableRepository.findById(tableID)
                 .orElseThrow(() -> new EntityNotFoundException("Masa bulunamadı, ID: " + tableID));
 
-        // 2. İş Mantığı: Masanın durumunu güncelle.
         tableToUpdate.setStatus(newStatus);
-
-        // 3. Değişiklikleri kaydet.
-        // (Not: @Transactional sayesinde 'save' demesek de çalışır ama
-        //  açıkça 'save' demek, güncellenmiş nesneyi döndürmeyi garantiler.)
         return tableRepository.save(tableToUpdate);
     }
-
-    // İleride "Masa 1"in detaylarını getirmek için
-    // public Table getTableById(Long tableID) {
-    //     return tableRepository.findById(tableID)
-    //             .orElseThrow(() -> new EntityNotFoundException("Masa bulunamadı, ID: " + tableID));
-    // }
 }
