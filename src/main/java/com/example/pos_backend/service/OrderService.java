@@ -170,7 +170,7 @@ public class OrderService {
     }
 
     public Order getActiveOrderByTableId(Long tableId) {
-        return orderRepository.findFirstByTable_TableIDAndOrderStatusNot(tableId, "ÖDENDİ")
+        return orderRepository.findFirstByTable_TableIDAndOrderStatusNot(tableId, "ODENDİ")
                 .orElse(null);
     }
     @Transactional
@@ -201,6 +201,27 @@ public class OrderService {
         order.setTotalAmount(newTotal);
 
         return orderRepository.save(order);
+    }
+    // Backend -> OrderService.java
+
+    @Transactional
+    public void deleteOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Sipariş bulunamadı"));
+
+        // --- DEĞİŞİKLİK BURADA ---
+        // Şu kısmı SİLİYORUZ veya YORUMA ALIYORUZ.
+        // Sipariş silinse bile masa DOLU kalmalı (Garson manuel boşaltana kadar).
+
+        /* Table table = order.getTable();
+        if (table != null) {
+            table.setStatus("BOŞ");
+            tableRepository.save(table);
+        }
+        */
+
+        // Sadece siparişi siliyoruz
+        orderRepository.delete(order);
     }
 
 }

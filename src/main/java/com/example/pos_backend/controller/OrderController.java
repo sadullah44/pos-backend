@@ -68,4 +68,10 @@ public class OrderController {
     public Order confirmOrderToKitchen(@PathVariable Long orderId) {
         return orderService.sendOrderToKitchen(orderId);
     }
+    // OrderController.java içine ekle
+
+    @DeleteMapping("/{orderId}")
+    public void deleteOrder(@PathVariable Long orderId) {
+        orderService.deleteOrder(orderId);
+    }
 }
