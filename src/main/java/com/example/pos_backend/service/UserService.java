@@ -5,6 +5,8 @@ import com.example.pos_backend.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service // Bu sınıfın bir "Servis" (Beyin) katmanı olduğunu Spring'e bildirir.
 public class UserService {
 
@@ -56,5 +58,15 @@ public class UserService {
         // (Adım 55'te 'User.java'daki 'password' alanına @JsonIgnore koyduğumuz için,
         // bu nesne JSON'a döndüğünde şifre alanı görünmeyecektir. GÜVENLİ.)
         return user;
+    }
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public void updateUserStatus(Long userId, boolean isActive) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Kullanıcı bulunamadı"));
+        user.setActive(isActive);
+        userRepository.save(user);
     }
 }

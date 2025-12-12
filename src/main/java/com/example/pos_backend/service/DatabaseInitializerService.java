@@ -204,11 +204,11 @@ public class DatabaseInitializerService {
         if (tableRepository.count() == 0) {
             System.out.println("Varsayılan masalar oluşturuluyor...");
             tableRepository.saveAll(Arrays.asList(
-                    new Table("Masa 1", Table.STATUS_AVAILABLE),
-                    new Table("Masa 2", Table.STATUS_AVAILABLE),
-                    new Table("Masa 3", Table.STATUS_RESERVED),
-                    new Table("Masa 4", Table.STATUS_AVAILABLE),
-                    new Table("Masa 5", Table.STATUS_AVAILABLE)
+                    new Table("Masa 1", Table.STATUS_AVAILABLE,6),
+                    new Table("Masa 2", Table.STATUS_AVAILABLE,4),
+                    new Table("Masa 3", Table.STATUS_RESERVED,4),
+                    new Table("Masa 4", Table.STATUS_AVAILABLE,5),
+                    new Table("Masa 5", Table.STATUS_AVAILABLE,4)
             ));
         } else {
             System.out.println("Masalar zaten mevcut. Reset YAPILMIYOR.");

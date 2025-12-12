@@ -67,4 +67,32 @@ public class TableService {
         tableToUpdate.setStatus(newStatus);
         return tableRepository.save(tableToUpdate);
     }
+    // --- YENİ EKLENECEK METOT: MASA EKLEME ---
+    public Table addTable(Table table) {
+        // Eğer durum belirtilmemişse varsayılan olarak "BOŞ" yap
+        if (table.getStatus() == null || table.getStatus().isEmpty()) {
+            table.setStatus(Table.STATUS_AVAILABLE); // veya "BOŞ"
+        }
+        // Repository'ye kaydet
+        return tableRepository.save(table);
+    }
+    // --- YENİ: MASA SİLME ---
+    public void deleteTable(Long tableId) {
+        if (!tableRepository.existsById(tableId)) {
+            throw new EntityNotFoundException("Silinecek masa bulunamadı ID: " + tableId);
+        }
+        tableRepository.deleteById(tableId);
+    }
+
+    // --- YENİ: MASA GÜNCELLEME (İsim ve Kapasite) ---
+    public Table updateTableDetails(Long tableId, Table updatedTable) {
+        Table existingTable = tableRepository.findById(tableId)
+                .orElseThrow(() -> new EntityNotFoundException("Masa bulunamadı ID: " + tableId));
+
+        // Sadece isim ve kapasiteyi güncelle, durumunu (BOŞ/DOLU) bozma
+        existingTable.setTableName(updatedTable.getTableName());
+        existingTable.setCapacity(updatedTable.getCapacity());
+
+        return tableRepository.save(existingTable);
+    }
 }

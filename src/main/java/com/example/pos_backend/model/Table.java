@@ -1,4 +1,4 @@
-package com.example.pos_backend.model; // Paket adınızın bu olduğundan emin olun
+package com.example.pos_backend.model;
 
 import jakarta.persistence.*;
 
@@ -8,28 +8,28 @@ public class Table {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long tableID; // Sizin isteğiniz: tableID (id yerine)
+    private Long tableID;
 
-    private String tableName; // Sizin isteğiniz: tableName (name yerine)
+    private String tableName;
 
-    private String status; // Sizin isteğiniz: status
+    private String status;
 
-    // Eski 'capacity' alanı sizin yeni listenizde olmadığı için kaldırıldı.
+    // --- YENİ EKLENEN ALAN ---
+    private int capacity;
 
-    // Statik sabitler (Bunlar kalabilir, kullanışlıdır)
+    // Statik sabitler
     public static final String STATUS_AVAILABLE = "BOŞ";
     public static final String STATUS_OCCUPIED = "DOLU";
     public static final String STATUS_RESERVED = "REZERVE";
 
-    // JPA için boş constructor
     public Table() {
     }
 
-    // Android'de (Adım 6'daki DatabaseInitializerService)
-    // başlangıç verilerini oluşturmak için kullandığımız constructor
-    public Table(String tableName, String status) {
+    // DatabaseInitializerService için güncellenen constructor
+    public Table(String tableName, String status, int capacity) {
         this.tableName = tableName;
         this.status = status;
+        this.capacity = capacity;
     }
 
     // --- Getter ve Setter Metotları ---
@@ -56,5 +56,14 @@ public class Table {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    // --- YENİ GETTER/SETTER ---
+    public int getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(int capacity) {
+        this.capacity = capacity;
     }
 }

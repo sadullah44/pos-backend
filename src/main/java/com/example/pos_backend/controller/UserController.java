@@ -5,6 +5,8 @@ import com.example.pos_backend.model.User;
 import com.example.pos_backend.service.UserService; // 'Kullanıcı Beyni'ni import et
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @CrossOrigin("*") // Android (veya Postman) tarafının erişebilmesi için
 @RestController
 @RequestMapping("") // Tüm kullanıcı endpoint'lerinin başı '/api'
@@ -35,7 +37,16 @@ public class UserController {
         return userService.loginUser(request.getUsername(), request.getPassword());
     }
 
-    // TODO (İleride Gerekirse):
-    // Arkadaşınızın 'Tüm Kullanıcıları Listeleme' (örn: Admin paneli)
-    // ekranına ihtiyacı olursa, buraya bir @GetMapping("/users") eklenebilir.
+    // --- YENİ: Tüm Kullanıcıları Listele (Admin İçin) ---
+    @GetMapping("/list")
+    public List<User> getAllUsers() {
+        return userService.getAllUsers();
+    }
+
+    // --- YENİ: Kullanıcı Durumunu Değiştir (Aktif/Pasif) ---
+    // URL: /api/users/{id}/status?active=false
+    @PutMapping("/{id}/status")
+    public void changeUserStatus(@PathVariable Long id, @RequestParam boolean active) {
+        userService.updateUserStatus(id, active);
+    }
 }
