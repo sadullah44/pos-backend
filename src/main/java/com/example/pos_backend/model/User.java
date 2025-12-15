@@ -1,5 +1,6 @@
 package com.example.pos_backend.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 
@@ -13,14 +14,16 @@ public class User {
 
     @Column(length = 50, unique = true, nullable = false)
     private String username; // Arkadaşınızın SQL'indeki 'username'
-    @JsonIgnore
-    @Column(name = "passwordHash", length = 255, nullable = false) // 'password' değil, 'passwordHash'
+    // Bu satır: "Android'den gelirken OKU, ama Android'e geri gönderirken GİZLE" demektir.
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Column(name = "passwordHash", length = 255, nullable = false)
     private String password; // Arkadaşınızın SQL'indeki 'passwordHash' (Java'da 'password' diyelim)
 
     @Column(length = 100, nullable = false)
     private String fullName; // Arkadaşınızın SQL'inde eklediği YENİ ALAN
 
     @Column(nullable = false)
+    @JsonProperty("isActive")
     private boolean isActive = true; // Arkadaşınızın SQL'indeki 'isActive' alanı
 
     // --- DEĞİŞİKLİK 1: 'String role' gitti, 'Role role' geldi ---

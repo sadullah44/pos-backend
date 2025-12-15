@@ -1,64 +1,46 @@
-package com.example.pos_backend.service; // Paket adınızın bu olduğundan emin olun
+package com.example.pos_backend.service;
 
+import com.example.pos_backend.model.Role;
 import com.example.pos_backend.model.User;
+import com.example.pos_backend.repository.RoleRepository;
 import com.example.pos_backend.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@Service // Bu sınıfın bir "Servis" (Beyin) katmanı olduğunu Spring'e bildirir.
+@Service
 public class UserService {
 
-    // --- 'Müteahhit' katmanını (Repository) enjekte etme ---
-
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
 
-    // Tek constructor (Yapıcı Metot)
-    public UserService(UserRepository userRepository) {
+    // --- DÜZELTME BURADA YAPILDI ---
+    // Parantez içine 'RoleRepository roleRepository' eklendi.
+    public UserService(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
     }
+    // --- DÜZELTME BİTTİ ---
 
     /**
      * YENİ METOT (Arkadaşınızın İhtiyacı İçin: "Giriş Yap")
-     * Kullanıcı girişi mantığını yönetir.
-     * @param username Gelen kullanıcı adı
-     * @param password Gelen şifre (bizim projede bu, "hash_garson123" gibi sahte hash)
-     * @return Şifre doğruysa 'User' nesnesini döndürür.
-     * @throws EntityNotFoundException Kullanıcı bulunamazsa.
-     * @throws IllegalStateException Şifre yanlışsa veya hesap pasifse.
      */
     public User loginUser(String username, String password) {
-
-        // 1. Kullanıcıyı 'username' ile veritabanında bul.
-        // (Bu 'findByUsername' metodunu Adım 53.1'de 'UserRepository'ye eklemiştik)
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new EntityNotFoundException("Kullanıcı bulunamadı: " + username));
 
-        // 2. Şifre Kontrolü (GÜVENLİK NOTU)
-        // Gerçek bir projede, burada Spring Security ve BCrypt ile şifre hash'leri
-        // (örn: BCrypt.check(password, user.getPassword())) karşılaştırılır.
-        //
-        // Bizim projemizde (DatabaseInitializerService) şifreleri "hash_garson123"
-        // olarak 'düz metin-hash' şeklinde kaydettiğimiz için, basit bir 'equals' karşılaştırması yapıyoruz.
-        // Arkadaşınız Android'den 'password' olarak "hash_garson123" gönderecek.
-
         if (!user.getPassword().equals(password)) {
-            // Şifreler eşleşmiyorsa
             throw new IllegalStateException("Yanlış şifre");
         }
 
-        // 3. İŞ KURALI (Arkadaşınızın 'isActive' alanı için)
-        // 'deneme_pasif' (isActive=false) kullanıcısı giriş yapamasın.
         if (!user.isActive()) {
             throw new IllegalStateException("Kullanıcı hesabı pasif: " + username);
         }
 
-        // 4. Başarılı. 'User' nesnesini döndür.
-        // (Adım 55'te 'User.java'daki 'password' alanına @JsonIgnore koyduğumuz için,
-        // bu nesne JSON'a döndüğünde şifre alanı görünmeyecektir. GÜVENLİ.)
         return user;
     }
+
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
@@ -68,5 +50,55 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("Kullanıcı bulunamadı"));
         user.setActive(isActive);
         userRepository.save(user);
+    }
+
+    // --- YENİ: KULLANICI EKLE ---
+    public User createUser(User user) {
+        // Gelen rolu kontrol et ve DB'den gerçeğini bul
+        if (user.getRole() != null) {
+            Role dbRole = roleRepository.findByRoleName(user.getRole().getRoleName())
+                    .orElseThrow(() -> new RuntimeException("Rol bulunamadı"));
+            user.setRole(dbRole);
+        }
+
+        return userRepository.save(user);
+    }
+
+    // --- YENİ: KULLANICI GÜNCELLE ---
+    public User updateUser(Long id, User userUpdates) {
+        // 1. Veritabanındaki mevcut kullanıcıyı bul
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+
+        // 2. Basit alanları güncelle
+        existingUser.setFullName(userUpdates.getFullName());
+        existingUser.setUsername(userUpdates.getUsername());
+        existingUser.setActive(userUpdates.isActive());
+
+        // Şifre boş değilse güncelle
+        if (userUpdates.getPassword() != null && !userUpdates.getPassword().isEmpty()) {
+            existingUser.setPassword(userUpdates.getPassword());
+        }
+
+        // --- KRİTİK KISIM: ROL GÜNCELLEME ---
+        if (userUpdates.getRole() != null) {
+            String roleName = userUpdates.getRole().getRoleName();
+
+            Role dbRole = roleRepository.findByRoleName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Hata: " + roleName + " rolü veritabanında bulunamadı!"));
+
+            existingUser.setRole(dbRole);
+        }
+
+        // 3. Kaydet
+        return userRepository.save(existingUser);
+    }
+
+    // --- YENİ: KULLANICI SİL ---
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new EntityNotFoundException("Silinecek kullanıcı bulunamadı id: " + id);
+        }
+        userRepository.deleteById(id);
     }
 }

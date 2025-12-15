@@ -1,52 +1,56 @@
-package com.example.pos_backend.controller; // Paket adınızın bu olduğundan emin olun
+package com.example.pos_backend.controller;
 
-import com.example.pos_backend.dto.LoginRequest; // Az önce oluşturduğumuz DTO'yu import et
+import com.example.pos_backend.dto.LoginRequest;
 import com.example.pos_backend.model.User;
-import com.example.pos_backend.service.UserService; // 'Kullanıcı Beyni'ni import et
+import com.example.pos_backend.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin("*") // Android (veya Postman) tarafının erişebilmesi için
+@CrossOrigin("*")
 @RestController
-@RequestMapping("") // Tüm kullanıcı endpoint'lerinin başı '/api'
+@RequestMapping("") // DÜZELTİLDİ: Burası boş bırakıldı, 'api' YOK.
 public class UserController {
-
-    // --- 'Beyin' katmanını (Service) enjekte etme ---
 
     private final UserService userService;
 
-    // Tek constructor (Yapıcı Metot)
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    // --- YENİ ENDPOINT (Arkadaşınızın İhtiyacı İçin: "Giriş Yap") ---
-    // Bu, "Giriş Yap" senaryosunu gerçekleştiren API kapısıdır.
-    // URL: POST http://localhost:8080/api/login
-    // BODY: { "username": "garson01", "password": "hash_garson123" }
-
-    /**
-     * Kullanıcı girişi yapmak için kullanılır.
-     * @param request JSON gövdesinden gelen 'username' ve 'password'ü tutan DTO.
-     * @return Başarılı giriş yapılırsa 'User' nesnesi (şifre alanı @JsonIgnore ile gizlenmiş).
-     */
+    // URL: http://...:8080/login
     @PostMapping("/login")
     public User loginUser(@RequestBody LoginRequest request) {
-        // KAPI (Controller), İŞİ BEYNE (Service) PASLAR
         return userService.loginUser(request.getUsername(), request.getPassword());
     }
 
-    // --- YENİ: Tüm Kullanıcıları Listele (Admin İçin) ---
-    @GetMapping("/list")
+    // --- PERSONEL YÖNETİMİ (CRUD) ---
+
+    // 1. LİSTELEME
+    // URL: http://...:8080/users
+    @GetMapping("/users")
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
 
-    // --- YENİ: Kullanıcı Durumunu Değiştir (Aktif/Pasif) ---
-    // URL: /api/users/{id}/status?active=false
-    @PutMapping("/{id}/status")
-    public void changeUserStatus(@PathVariable Long id, @RequestParam boolean active) {
-        userService.updateUserStatus(id, active);
+    // 2. EKLEME
+    // URL: http://...:8080/users
+    @PostMapping("/users")
+    public User createUser(@RequestBody User user) {
+        return userService.createUser(user);
+    }
+
+    // 3. GÜNCELLEME
+    // URL: http://...:8080/users/{id}
+    @PutMapping("/users/{id}")
+    public User updateUser(@PathVariable Long id, @RequestBody User user) {
+        return userService.updateUser(id, user);
+    }
+
+    // 4. SİLME
+    // URL: http://...:8080/users/{id}
+    @DeleteMapping("/users/{id}")
+    public void deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
     }
 }
