@@ -2,10 +2,7 @@ package com.example.pos_backend.controller; // Paket adınızın bu olduğundan 
 
 import com.example.pos_backend.model.Category;
 import com.example.pos_backend.service.CategoryService; // 'Kategori Beyni'ni import et
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -35,5 +32,22 @@ public class CategoryController {
     public List<Category> getAllCategories() {
         // KAPI (Controller), İŞİ BEYNE (Service) PASLAR
         return categoryService.getAllCategories();
+    }
+    // EKLEME: POST http://localhost:8080/kategoriler
+    @PostMapping
+    public Category createCategory(@RequestBody Category category) {
+        return categoryService.createCategory(category);
+    }
+
+    // GÜNCELLEME: PUT http://localhost:8080/kategoriler/{id}
+    @PutMapping("/{id}")
+    public Category updateCategory(@PathVariable Long id, @RequestBody Category category) {
+        return categoryService.updateCategory(id, category);
+    }
+
+    // SİLME: DELETE http://localhost:8080/kategoriler/{id}
+    @DeleteMapping("/{id}")
+    public void deleteCategory(@PathVariable Long id) {
+        categoryService.deleteCategory(id);
     }
 }
