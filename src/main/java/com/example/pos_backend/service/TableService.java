@@ -2,7 +2,7 @@ package com.example.pos_backend.service;
 
 import com.example.pos_backend.model.Order;
 import com.example.pos_backend.model.Table;
-import com.example.pos_backend.repository.OrderRepository; // EKLENDİ
+import com.example.pos_backend.repository.OrderRepository;
 import com.example.pos_backend.repository.TableRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +16,7 @@ import java.util.List;
 public class TableService {
 
     private final TableRepository tableRepository;
-    private final OrderRepository orderRepository; // EKLENDİ: Siparişleri kontrol etmek için
+    private final OrderRepository orderRepository;
 
     @Autowired
     public TableService(TableRepository tableRepository, OrderRepository orderRepository) {
@@ -27,30 +27,32 @@ public class TableService {
     public List<Table> getAllTables() {
         List<Table> tables = tableRepository.findAll();
 
-        // --- OTOMATİK DÜZELTME MEKANİZMASI ---
         for (Table table : tables) {
-            boolean isReallyOccupied = checkIfTableHasActiveOrder(table.getTableID());
+            // DÜZELTME: Eğer masa REZERVE ise, otomatik kontrolü atla.
+            // Çünkü rezerve masada henüz sipariş olmayabilir ama durum "REZERVE" kalmalı.
+            if ("REZERVE".equalsIgnoreCase(table.getStatus())) {
+                continue;
+            }
 
-            // Gerçek durum ne olmalı?
+            boolean isReallyOccupied = checkIfTableHasActiveOrder(table.getTableID());
             String realStatus = isReallyOccupied ? "DOLU" : "BOŞ";
 
-            // Eğer veritabanındaki durum yanlışsa, düzelt ve kaydet
             if (!realStatus.equalsIgnoreCase(table.getStatus())) {
                 table.setStatus(realStatus);
+                // Eğer masa BOŞ'a dönüyorsa müşteri ismini de temizleyelim
+                if (realStatus.equals("BOŞ")) {
+                    table.setCustomerName(null);
+                }
                 tableRepository.save(table);
             }
         }
         return tables;
     }
 
-    // Masada aktif (kapanmamış) sipariş var mı?
     private boolean checkIfTableHasActiveOrder(Long tableId) {
-        // OrderRepository'de findByTable_TableID metodunun olduğundan emin ol
         List<Order> orders = orderRepository.findByTable_TableID(tableId);
-
         for (Order order : orders) {
             String s = order.getOrderStatus();
-            // Bu durumlardan biri varsa masa doludur
             if ("YENI".equals(s) || "BEKLIYOR".equals(s) || "HAZIRLANIYOR".equals(s) ||
                     "HAZIR".equals(s) || "ODEME_BEKLIYOR".equals(s) || "BEKLEMEDE".equals(s)) {
                 return true;
@@ -65,18 +67,22 @@ public class TableService {
                 .orElseThrow(() -> new EntityNotFoundException("Masa bulunamadı, ID: " + tableID));
 
         tableToUpdate.setStatus(newStatus);
+
+        // Eğer masa BOŞ yapılıyorsa, müşteri ismini sil
+        if ("BOŞ".equalsIgnoreCase(newStatus)) {
+            tableToUpdate.setCustomerName(null);
+        }
+
         return tableRepository.save(tableToUpdate);
     }
-    // --- YENİ EKLENECEK METOT: MASA EKLEME ---
+
     public Table addTable(Table table) {
-        // Eğer durum belirtilmemişse varsayılan olarak "BOŞ" yap
         if (table.getStatus() == null || table.getStatus().isEmpty()) {
-            table.setStatus(Table.STATUS_AVAILABLE); // veya "BOŞ"
+            table.setStatus(Table.STATUS_AVAILABLE);
         }
-        // Repository'ye kaydet
         return tableRepository.save(table);
     }
-    // --- YENİ: MASA SİLME ---
+
     public void deleteTable(Long tableId) {
         if (!tableRepository.existsById(tableId)) {
             throw new EntityNotFoundException("Silinecek masa bulunamadı ID: " + tableId);
@@ -84,14 +90,30 @@ public class TableService {
         tableRepository.deleteById(tableId);
     }
 
-    // --- YENİ: MASA GÜNCELLEME (İsim ve Kapasite) ---
+    // --- GÜNCELLENEN METOT (Android burayı kullanıyor) ---
     public Table updateTableDetails(Long tableId, Table updatedTable) {
         Table existingTable = tableRepository.findById(tableId)
                 .orElseThrow(() -> new EntityNotFoundException("Masa bulunamadı ID: " + tableId));
 
-        // Sadece isim ve kapasiteyi güncelle, durumunu (BOŞ/DOLU) bozma
-        existingTable.setTableName(updatedTable.getTableName());
-        existingTable.setCapacity(updatedTable.getCapacity());
+        // 1. Masa Adını Güncelle
+        if (updatedTable.getTableName() != null) {
+            existingTable.setTableName(updatedTable.getTableName());
+        }
+
+        // 2. Kapasiteyi Güncelle
+        if (updatedTable.getCapacity() != 0) {
+            existingTable.setCapacity(updatedTable.getCapacity());
+        }
+
+        // 3. (YENİ) Müşteri Adını Güncelle
+        // Android "Ahmet (555..)" gönderiyor, bunu kaydedelim.
+        existingTable.setCustomerName(updatedTable.getCustomerName());
+
+        // 4. (YENİ) Durumu da Güncelle
+        // Android "REZERVE" gönderiyor, bunu işlemeliyiz.
+        if (updatedTable.getStatus() != null) {
+            existingTable.setStatus(updatedTable.getStatus());
+        }
 
         return tableRepository.save(existingTable);
     }

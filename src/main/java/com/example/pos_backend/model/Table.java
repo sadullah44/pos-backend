@@ -11,11 +11,11 @@ public class Table {
     private Long tableID;
 
     private String tableName;
-
     private String status;
-
-    // --- YENİ EKLENEN ALAN ---
     private int capacity;
+
+    // --- YENİ EKLENEN ALAN (Müşteri Adı) ---
+    private String customerName;
 
     // Statik sabitler
     public static final String STATUS_AVAILABLE = "BOŞ";
@@ -25,7 +25,6 @@ public class Table {
     public Table() {
     }
 
-    // DatabaseInitializerService için güncellenen constructor
     public Table(String tableName, String status, int capacity) {
         this.tableName = tableName;
         this.status = status;
@@ -33,37 +32,19 @@ public class Table {
     }
 
     // --- Getter ve Setter Metotları ---
+    public Long getTableID() { return tableID; }
+    public void setTableID(Long tableID) { this.tableID = tableID; }
 
-    public Long getTableID() {
-        return tableID;
-    }
+    public String getTableName() { return tableName; }
+    public void setTableName(String tableName) { this.tableName = tableName; }
 
-    public void setTableID(Long tableID) {
-        this.tableID = tableID;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 
-    public String getTableName() {
-        return tableName;
-    }
+    public int getCapacity() { return capacity; }
+    public void setCapacity(int capacity) { this.capacity = capacity; }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    // --- YENİ GETTER/SETTER ---
-    public int getCapacity() {
-        return capacity;
-    }
-
-    public void setCapacity(int capacity) {
-        this.capacity = capacity;
-    }
+    // --- YENİ GETTER/SETTER (Müşteri Adı İçin) ---
+    public String getCustomerName() { return customerName; }
+    public void setCustomerName(String customerName) { this.customerName = customerName; }
 }
