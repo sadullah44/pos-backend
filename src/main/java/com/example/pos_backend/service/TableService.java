@@ -54,7 +54,7 @@ public class TableService {
         for (Order order : orders) {
             String s = order.getOrderStatus();
             if ("YENI".equals(s) || "BEKLIYOR".equals(s) || "HAZIRLANIYOR".equals(s) ||
-                    "HAZIR".equals(s) || "ODEME_BEKLIYOR".equals(s) || "BEKLEMEDE".equals(s)) {
+                    "HAZIR".equals(s) || "ÖDEME BEKLİYOR".equals(s) || "BEKLEMEDE".equals(s)) {
                 return true;
             }
         }

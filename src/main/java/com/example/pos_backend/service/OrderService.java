@@ -166,7 +166,7 @@ public class OrderService {
                     "BEKLIYOR".equals(status) ||
                     "HAZIRLANIYOR".equals(status) ||
                     "HAZIR".equals(status) ||
-                    "ODEME_BEKLIYOR".equals(status) ||
+                    "ÖDEME BEKLİYOR".equals(status) ||
                     "BEKLEMEDE".equals(status)) { // "BEKLEMEDE"yi de ekledik
 
                 return order; // Aktif siparişi bulduk
