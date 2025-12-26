@@ -29,7 +29,6 @@ public class TableService {
 
         for (Table table : tables) {
             // DÜZELTME: Eğer masa REZERVE ise, otomatik kontrolü atla.
-            // Çünkü rezerve masada henüz sipariş olmayabilir ama durum "REZERVE" kalmalı.
             if ("REZERVE".equalsIgnoreCase(table.getStatus())) {
                 continue;
             }
@@ -53,8 +52,10 @@ public class TableService {
         List<Order> orders = orderRepository.findByTable_TableID(tableId);
         for (Order order : orders) {
             String s = order.getOrderStatus();
+            // GÜNCELLEME: Hem boşluklu hem alt çizgili versiyonları kabul et
             if ("YENI".equals(s) || "BEKLIYOR".equals(s) || "HAZIRLANIYOR".equals(s) ||
-                    "HAZIR".equals(s) || "ÖDEME BEKLİYOR".equals(s) || "BEKLEMEDE".equals(s)) {
+                    "HAZIR".equals(s) || "BEKLEMEDE".equals(s) ||
+                    "ÖDEME BEKLİYOR".equals(s) || "ODEME_BEKLIYOR".equals(s)) {
                 return true;
             }
         }
@@ -90,27 +91,20 @@ public class TableService {
         tableRepository.deleteById(tableId);
     }
 
-    // --- GÜNCELLENEN METOT (Android burayı kullanıyor) ---
     public Table updateTableDetails(Long tableId, Table updatedTable) {
         Table existingTable = tableRepository.findById(tableId)
                 .orElseThrow(() -> new EntityNotFoundException("Masa bulunamadı ID: " + tableId));
 
-        // 1. Masa Adını Güncelle
         if (updatedTable.getTableName() != null) {
             existingTable.setTableName(updatedTable.getTableName());
         }
 
-        // 2. Kapasiteyi Güncelle
         if (updatedTable.getCapacity() != 0) {
             existingTable.setCapacity(updatedTable.getCapacity());
         }
 
-        // 3. (YENİ) Müşteri Adını Güncelle
-        // Android "Ahmet (555..)" gönderiyor, bunu kaydedelim.
         existingTable.setCustomerName(updatedTable.getCustomerName());
 
-        // 4. (YENİ) Durumu da Güncelle
-        // Android "REZERVE" gönderiyor, bunu işlemeliyiz.
         if (updatedTable.getStatus() != null) {
             existingTable.setStatus(updatedTable.getStatus());
         }

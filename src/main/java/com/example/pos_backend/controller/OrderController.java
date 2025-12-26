@@ -4,6 +4,7 @@ import com.example.pos_backend.dto.AddOrderItemRequest;
 import com.example.pos_backend.dto.CreateOrderRequest;
 import com.example.pos_backend.model.Order;
 import com.example.pos_backend.service.OrderService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -54,6 +55,7 @@ public class OrderController {
     public Order getOrderByTable(@PathVariable Long tableId) {
         return orderService.getActiveOrderByTableId(tableId);
     }
+
     @DeleteMapping("/{orderId}/urun/{orderItemId}")
     public Order removeOrderItem(
             @PathVariable Long orderId,
@@ -61,17 +63,28 @@ public class OrderController {
     ) {
         return orderService.removeOrderItem(orderId, orderItemId);
     }
-    // OrderController.java İÇİNE EKLE
 
-    // Garson "Siparişi Mutfağa Gönder" butonuna bastığında burası çalışacak
     @PostMapping("/{orderId}/mutfaga-gonder")
     public Order confirmOrderToKitchen(@PathVariable Long orderId) {
         return orderService.sendOrderToKitchen(orderId);
     }
-    // OrderController.java içine ekle
 
     @DeleteMapping("/{orderId}")
     public void deleteOrder(@PathVariable Long orderId) {
         orderService.deleteOrder(orderId);
+    }
+
+    // YENİ: Android PaymentActivity için basitleştirilmiş ödeme endpoint'i
+    @PutMapping("/{orderId}/odendiIsaretle")
+    public ResponseEntity<Void> markOrderAsPaid(@PathVariable Long orderId) {
+        orderService.updateOrderStatus(orderId, "ODENDI");
+        return ResponseEntity.ok().build();
+    }
+    @PutMapping("/{orderId}/urun/{itemId}/servisEt")
+    public Order serveItem(
+            @PathVariable Long orderId,
+            @PathVariable Long itemId
+    ) {
+        return orderService.serveItem(orderId, itemId);
     }
 }

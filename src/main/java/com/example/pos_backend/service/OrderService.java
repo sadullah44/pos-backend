@@ -124,7 +124,6 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
-    // Mutfağa gönderme
     @Transactional
     public Order sendOrderToKitchen(Long orderId) {
         Order order = orderRepository.findById(orderId)
@@ -134,17 +133,22 @@ public class OrderService {
         boolean mutfagaGidenUrunVarMi = false;
 
         for (OrderItem item : items) {
-            if ("YENI".equals(item.getKitchenStatus())) {
-                // Yemekse -> BEKLIYOR, İçecekse -> HAZIR
+            // MANTIK: Eğer ürün 'YENI' (ilk kez eklendi) veya 'BEKLIYOR' durumundaysa mutfağa gönder
+            if ("YENI".equals(item.getKitchenStatus()) || "BEKLIYOR".equals(item.getKitchenStatus())) {
+
+                // Ürün mutfak ürünü mü (Yemek vb.) yoksa bar ürünü mü (İçecek vb.)?
                 if (item.getProduct() != null && Boolean.TRUE.equals(item.getProduct().isKitchenItem())) {
-                    item.setKitchenStatus("BEKLIYOR");
+                    // Sizin isteğiniz: Bekliyor durumundan Hazırlanıyor'a çekiyoruz
+                    item.setKitchenStatus("HAZIRLANIYOR");
                     mutfagaGidenUrunVarMi = true;
                 } else {
+                    // İçecekler veya mutfak gerektirmeyen ürünler direkt 'HAZIR' olur
                     item.setKitchenStatus("HAZIR");
                 }
             }
         }
 
+        // Eğer mutfağa en az bir ürün gönderildiyse genel sipariş durumunu güncelle
         if (mutfagaGidenUrunVarMi) {
             order.setOrderStatus("HAZIRLANIYOR");
         }
@@ -154,26 +158,25 @@ public class OrderService {
 
     // --- AKTİF SİPARİŞİ GETİR (GÜVENLİ FİLTRELEME) ---
     public Order getActiveOrderByTableId(Long tableId) {
-        // 1. O masaya ait tüm siparişleri çek
         List<Order> orders = orderRepository.findByTable_TableID(tableId);
 
-        // 2. Listeyi kontrol et
         for (Order order : orders) {
             String status = order.getOrderStatus();
 
-            // 3. SADECE AKTİF DURUMLARI KABUL ET (Whitelist)
+            // GÜNCELLEME: Hem boşluklu hem alt çizgili versiyonları kabul et
             if ("YENI".equals(status) ||
                     "BEKLIYOR".equals(status) ||
                     "HAZIRLANIYOR".equals(status) ||
                     "HAZIR".equals(status) ||
+                    "BEKLEMEDE".equals(status) ||
                     "ÖDEME BEKLİYOR".equals(status) ||
-                    "BEKLEMEDE".equals(status)) { // "BEKLEMEDE"yi de ekledik
+                    "ODEME_BEKLIYOR".equals(status)) {
 
-                return order; // Aktif siparişi bulduk
+                return order;
             }
         }
 
-        return null; // Hiç aktif sipariş yok
+        return null;
     }
 
     @Transactional
@@ -218,5 +221,15 @@ public class OrderService {
         */
 
         orderRepository.delete(order);
+    }
+    @Transactional
+    public Order serveItem(Long orderId, Long itemId) {
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        OrderItem item = orderItemRepository.findById(itemId).orElseThrow();
+
+        item.setIsServed(true); // Veritabanında true yap
+        item.setKitchenStatus("SERVİS EDİLDİ"); // Durumu güncelle
+
+        return orderRepository.save(order);
     }
 }
