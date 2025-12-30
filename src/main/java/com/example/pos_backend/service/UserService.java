@@ -90,6 +90,9 @@ public class UserService {
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             throw new RuntimeException("Bu kullanıcı adı zaten kullanılıyor: " + user.getUsername());
         }
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("Bu e-posta adresi zaten sisteme kayıtlı.");
+        }
 
         // Rol kontrolü ve atama
         if (user.getRole() != null) {
@@ -119,38 +122,49 @@ public class UserService {
      */
     @Transactional
     public User updateUser(Long id, User userUpdates) {
+        // 1. Kullanıcı var mı kontrol et
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Kullanıcı bulunamadı: " + id));
 
-        // Temel bilgileri güncelle
+        // 2. Ad Soyad Güncelleme
         if (userUpdates.getFullName() != null) {
             existingUser.setFullName(userUpdates.getFullName());
         }
 
-        // Kullanıcı adı değişikliği
+        // 3. E-posta Kontrolü ve Güncelleme
+        if (userUpdates.getEmail() != null && !userUpdates.getEmail().equalsIgnoreCase(existingUser.getEmail())) {
+            // Eğer yeni girilen e-posta, mevcut e-postadan farklıysa veritabanında başkasında var mı bak
+            if (userRepository.findByEmail(userUpdates.getEmail()).isPresent()) {
+                throw new RuntimeException("Bu e-posta adresi başka bir personel tarafından kullanılıyor.");
+            }
+            existingUser.setEmail(userUpdates.getEmail());
+        }
+
+        // 4. Kullanıcı Adı Kontrolü ve Güncelleme
         if (userUpdates.getUsername() != null && !userUpdates.getUsername().equals(existingUser.getUsername())) {
-            // Yeni kullanıcı adı başkası tarafından kullanılıyor mu kontrol et
+            // Eğer yeni kullanıcı adı mevcut olandan farklıysa kontrol et
             if (userRepository.findByUsername(userUpdates.getUsername()).isPresent()) {
                 throw new RuntimeException("Bu kullanıcı adı zaten kullanılıyor: " + userUpdates.getUsername());
             }
             existingUser.setUsername(userUpdates.getUsername());
         }
 
-        // Aktiflik durumu
+        // 5. Aktiflik Durumu
         existingUser.setActive(userUpdates.isActive());
 
-        // Şifre güncelleme (eğer yeni şifre gönderildiyse)
+        // 6. Şifre Güncelleme (Boş değilse hashle ve kaydet)
         if (userUpdates.getPassword() != null && !userUpdates.getPassword().isEmpty()) {
             existingUser.setPassword(passwordEncoder.encode(userUpdates.getPassword()));
         }
 
-        // Rol güncelleme
-        if (userUpdates.getRole() != null) {
+        // 7. Rol Güncelleme
+        if (userUpdates.getRole() != null && userUpdates.getRole().getRoleName() != null) {
             Role dbRole = roleRepository.findByRoleName(userUpdates.getRole().getRoleName())
                     .orElseThrow(() -> new RuntimeException("Rol bulunamadı: " + userUpdates.getRole().getRoleName()));
             existingUser.setRole(dbRole);
         }
 
+        // 8. Değişiklikleri Kaydet
         return userRepository.save(existingUser);
     }
 

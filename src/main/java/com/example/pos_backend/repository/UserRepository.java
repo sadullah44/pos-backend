@@ -17,6 +17,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * Kullanıcı adına göre kullanıcı bul
      */
     Optional<User> findByUsername(String username);
+    Optional<User> findByEmail(String email);
 
     /**
      * Başarısız giriş denemesi sayısını artır
