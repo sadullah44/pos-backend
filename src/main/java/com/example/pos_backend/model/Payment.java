@@ -1,102 +1,66 @@
-package com.example.pos_backend.model; // Paket adınızın bu olduğundan emin olun
-import com.fasterxml.jackson.annotation.JsonFormat; // Bu satırı ekleyin
+package com.example.pos_backend.model;
+
+import com.fasterxml.jackson.annotation.JsonBackReference; // Bu import'u ekleyin
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
-import java.math.BigDecimal; // Bu import'u ekleyin
-import java.time.LocalDateTime; // Ödeme zamanı için
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "payments") // Veritabanı tablo adı
+@Table(name = "payments")
 public class Payment {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long paymentID; // Sizin isteğiniz: paymentID
+    private Long paymentID;
 
-    // Sizin isteğiniz: orderID (Hangi siparişin ödemesi)
-    // 'Parçalı ödeme' kuralı (@ManyToOne)
     @ManyToOne
     @JoinColumn(name = "orderID", nullable = false)
+    @JsonBackReference // ÖNEMLİ: Order içinden Payment çekilirken döngüye girmemesi için
     private Order order;
 
-    // Sizin isteğiniz: methodID (Hangi yöntemle ödendi)
-    // (Biz bu sınıfı Adım 23'te 'PaymentMethod' olarak oluşturmuştuk)
     @ManyToOne
-    @JoinColumn(name = "paymentMethodID", nullable = false) // 'PaymentMethod'un ID'sine bağlan
+    @JoinColumn(name = "paymentMethodID", nullable = false)
     private PaymentMethod paymentMethod;
 
-    // Sizin isteğiniz: cashierID (Kasiyerin ID'si - Users tablosundan)
-    // --- YENİ EKLENEN İLİŞKİ ---
     @ManyToOne
     @JoinColumn(name = "cashierID", nullable = false)
-    private User cashier; // 'User' tablosuna bağlan (Kasiyer de bir 'User'dır)
+    private User cashier;
 
-    // Sizin isteğiniz: amountPaid (Ödenen tutar)
-    @Column(nullable = false,precision = 10, scale = 2)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amountPaid;
 
-    // Sizin isteğiniz: paymentTime (Ödeme zamanı)
-    @Column(updatable = false)
-    @JsonFormat(pattern = "dd.MM.yyyy HH:mm:ss")
+    @Column(name = "payment_time", updatable = false, columnDefinition = "TIMESTAMP(0)")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime paymentTime;
 
-    // JPA için boş constructor
     public Payment() {
     }
 
-    // Ödeme alındığı an zamanı otomatik kaydet
     @PrePersist
     protected void onPayment() {
-        this.paymentTime = LocalDateTime.now();
+        // Hem veritabanı (TIMESTAMP(0)) hem Java (withNano(0)) seviyesinde saliseleri siliyoruz
+        this.paymentTime = LocalDateTime.now().withNano(0);
     }
 
-    // --- Getter ve Setter Metotları (Yeni 'cashier' alanı dahil) ---
+    // --- Getter ve Setter Metotları ---
+    public Long getPaymentID() { return paymentID; }
+    public void setPaymentID(Long paymentID) { this.paymentID = paymentID; }
 
-    public Long getPaymentID() {
-        return paymentID;
-    }
+    public Order getOrder() { return order; }
+    public void setOrder(Order order) { this.order = order; }
 
-    public void setPaymentID(Long paymentID) {
-        this.paymentID = paymentID;
-    }
+    public PaymentMethod getPaymentMethod() { return paymentMethod; }
+    public void setPaymentMethod(PaymentMethod paymentMethod) { this.paymentMethod = paymentMethod; }
 
-    public Order getOrder() {
-        return order;
-    }
+    public User getCashier() { return cashier; }
+    public void setCashier(User cashier) { this.cashier = cashier; }
 
-    public void setOrder(Order order) {
-        this.order = order;
-    }
+    public BigDecimal getAmountPaid() { return amountPaid; }
+    public void setAmountPaid(BigDecimal amountPaid) { this.amountPaid = amountPaid; }
 
-    public PaymentMethod getPaymentMethod() {
-        return paymentMethod;
-    }
-
-    public void setPaymentMethod(PaymentMethod paymentMethod) {
-        this.paymentMethod = paymentMethod;
-    }
-
-    public User getCashier() {
-        return cashier;
-    }
-
-    public void setCashier(User cashier) {
-        this.cashier = cashier;
-    }
-
-    public BigDecimal getAmountPaid() {
-        return amountPaid;
-    }
-
-    public void setAmountPaid(BigDecimal amountPaid) {
-        this.amountPaid = amountPaid;
-    }
-
-    public LocalDateTime getPaymentTime() {
-        return paymentTime;
-    }
-
-    public void setPaymentTime(LocalDateTime paymentTime) {
-        this.paymentTime = paymentTime;
-    }
+    public LocalDateTime getPaymentTime() { return paymentTime; }
+    public void setPaymentTime(LocalDateTime paymentTime) { this.paymentTime = paymentTime; }
 }

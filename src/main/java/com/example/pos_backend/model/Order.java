@@ -16,40 +16,53 @@ public class Order {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long orderID;
 
-    // --- DOĞRU YERLEŞİM: Normal Alanlar ---
-    @Column(name = "created_at", updatable = false)
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
+    // --- Normal Alanlar ---
+    @Column(name = "created_at", updatable = false, columnDefinition = "TIMESTAMP(0)")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
 
     private String orderStatus;
     private BigDecimal totalAmount;
 
-    // --- DOĞRU YERLEŞİM: İlişkiler ---
+    // --- İlişkiler ---
     @ManyToOne
     @JoinColumn(name = "table_id", nullable = false)
     private Table table;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private User waiter; // @ManyToOne artık doğru şekilde User'ı işaret ediyor
+    private User waiter;
 
     @OneToMany(
             mappedBy = "order",
             cascade = CascadeType.ALL,
             orphanRemoval = true,
-            fetch = FetchType.EAGER
+            fetch = FetchType.EAGER // Sipariş kalemlerini getirir
     )
     @JsonManagedReference
     private List<OrderItem> orderItems;
 
+    // --- EKLENEN KISIM: Payments İlişkisi ---
+    // Bu kısım eksikti. Bu yüzden ödeme verisi gelmiyordu.
+    @OneToMany(
+            mappedBy = "order",         // Payment sınıfındaki "private Order order;" ile eşleşir
+            cascade = CascadeType.ALL,
+            fetch = FetchType.EAGER     // ÖNEMLİ: Siparişi çekerken ödemeyi de YÜKLE
+    )
+    @JsonManagedReference // Sonsuz döngüyü engeller (Payment tarafında @JsonBackReference olmalı)
+    private List<Payment> payments = new ArrayList<>();
+    // ----------------------------------------
+
     // Sipariş oluşturulurken tarihi otomatik ata
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        // Nanosaniyeyi sıfırlayarak temiz tarih formatı sağlar
+        this.createdAt = LocalDateTime.now().withNano(0);
     }
 
     public Order() {
         this.orderItems = new ArrayList<>();
+        this.payments = new ArrayList<>(); // Null hatası almamak için listeyi başlatıyoruz
     }
 
     // --- Getter ve Setterlar ---
@@ -74,4 +87,8 @@ public class Order {
 
     public List<OrderItem> getOrderItems() { return orderItems; }
     public void setOrderItems(List<OrderItem> orderItems) { this.orderItems = orderItems; }
+
+    // --- EKLENEN Getter ve Setter ---
+    public List<Payment> getPayments() { return payments; }
+    public void setPayments(List<Payment> payments) { this.payments = payments; }
 }
