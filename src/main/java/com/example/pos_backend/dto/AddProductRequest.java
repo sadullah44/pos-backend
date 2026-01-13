@@ -6,7 +6,16 @@ public class AddProductRequest {
     private String productName;
     private BigDecimal basePrice;
     private Long categoryId; // Hangi kategoriye eklenecek?
+    // AddProductRequest.java içine ekle:
+    private Integer stock;
 
+    public Integer getStock() {
+        return stock;
+    }
+
+    public void setStock(Integer stock) {
+        this.stock = stock;
+    }
     // Getter ve Setter'lar
     public String getProductName() { return productName; }
     public void setProductName(String productName) { this.productName = productName; }

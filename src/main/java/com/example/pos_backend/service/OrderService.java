@@ -98,12 +98,26 @@ public class OrderService {
     @Transactional
     public Order addOrderItemToOrder(Long orderId, AddOrderItemRequest request) {
 
+        // 1. Siparişi Bul
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Sipariş bulunamadı: " + orderId));
 
+        // 2. Ürünü Bul
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new EntityNotFoundException("Ürün bulunamadı: " + request.getProductId()));
 
+        // --- YENİ EKLENEN KISIM: Stok Kontrolü ---
+        // Eğer istenen miktar stoktan fazlaysa hata fırlat
+        if (product.getStockQuantity() < request.getQuantity()) {
+            throw new RuntimeException("Yetersiz Stok! Mevcut stok: " + product.getStockQuantity());
+        }
+
+        // --- YENİ EKLENEN KISIM: Stok Düşme ---
+        // Stoğu güncelle ve kaydet
+        product.setStockQuantity(product.getStockQuantity() - request.getQuantity());
+        productRepository.save(product);
+
+        // 3. Sipariş Kalemi Oluşturma (Mevcut kodun devamı)
         OrderItem newItem = new OrderItem();
         newItem.setOrder(order);
         newItem.setProduct(product);
@@ -115,6 +129,7 @@ public class OrderService {
 
         order.getOrderItems().add(newItem);
 
+        // 4. Toplam Tutar Hesaplama
         BigDecimal total = order.getOrderItems().stream()
                 .map(item -> item.getPriceAtOrder().multiply(new BigDecimal(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -179,22 +194,36 @@ public class OrderService {
         return null;
     }
 
+    // Ürün silme (Stok İadeli)
     @Transactional
     public Order removeOrderItem(Long orderId, Long orderItemId) {
 
+        // 1. Sipariş ve Ürün Doğrulaması
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Sipariş bulunamadı: " + orderId));
 
         OrderItem item = orderItemRepository.findById(orderItemId)
                 .orElseThrow(() -> new EntityNotFoundException("Ürün bulunamadı: " + orderItemId));
 
-        if (!item.getOrder().getOrderID().equals(orderId)) {
+        if (!item.getOrder().getOrderID()   .equals(orderId)) { // Not: getOrderID metod adın neyse onu kullan (getId, getOrderId vs.)
             throw new IllegalStateException("Bu ürün belirtilen siparişe ait değil!");
         }
 
+        // --- YENİ EKLENEN KISIM: Stok İadesi ---
+        // Silinen ürünün adedini stoğa geri ekle
+        Product product = item.getProduct();
+        if (product != null) {
+            int quantityToRestore = item.getQuantity();
+            product.setStockQuantity(product.getStockQuantity() + quantityToRestore);
+            productRepository.save(product); // Güncel stoğu kaydet
+        }
+        // ---------------------------------------
+
+        // 2. Ürünü Listeden ve Veritabanından Silme
         order.getOrderItems().remove(item);
         orderItemRepository.delete(item);
 
+        // 3. Toplam Tutarın Yeniden Hesaplanması
         BigDecimal newTotal = order.getOrderItems().stream()
                 .map(i -> i.getPriceAtOrder().multiply(new BigDecimal(i.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -206,20 +235,41 @@ public class OrderService {
 
     @Transactional
     public void deleteOrder(Long orderId) {
+        // 1. Siparişi Bul
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Sipariş bulunamadı"));
+
+        // --- YENİ EKLENEN KISIM: STOK İADESİ ---
+        // Sipariş silinmeden önce içindeki ürünlerin stoklarını geri yüklüyoruz.
+        if (order.getOrderItems() != null) {
+            for (OrderItem item : order.getOrderItems()) {
+                Product product = item.getProduct();
+
+                // Eğer ürün veritabanında hala mevcutsa
+                if (product != null) {
+                    // Silinen siparişteki adet kadar stoğu artır
+                    int quantityToRestore = item.getQuantity();
+                    product.setStockQuantity(product.getStockQuantity() + quantityToRestore);
+
+                    // Güncel stoğu kaydet
+                    productRepository.save(product);
+                }
+            }
+        }
+        // ---------------------------------------
 
         // Sipariş silindiğinde masayı otomatik BOŞ YAPMIYORUZ.
         // Garson "Masayı Boşa Çıkar" diyene kadar veya yeni sipariş girene kadar DOLU kalabilir.
         // (Eğer sipariş silinince masa boşalsın istersen aşağıdaki yorumu açabilirsin)
-        /*
-        Table table = order.getTable();
-        if (table != null) {
-            table.setStatus("BOŞ");
-            tableRepository.save(table);
-        }
-        */
+    /*
+    Table table = order.getTable();
+    if (table != null) {
+        table.setStatus("BOŞ");
+        tableRepository.save(table);
+    }
+    */
 
+        // 2. Siparişi Sil
         orderRepository.delete(order);
     }
     @Transactional

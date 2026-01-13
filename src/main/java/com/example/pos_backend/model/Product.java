@@ -1,38 +1,38 @@
-package com.example.pos_backend.model; // Paket adınızın bu olduğundan emin olun
-import java.math.BigDecimal; // Bu import'u ekleyin
+package com.example.pos_backend.model;
 
+import java.math.BigDecimal;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "products") // Arkadaşınızın 'Products' tablosu
+@Table(name = "products")
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "product_id") // Arkadaşınızın alanı: productID
+    @Column(name = "product_id")
     private Long productID;
 
-    @Column(name = "product_name", nullable = false) // Arkadaşınızın alanı: productName
+    @Column(name = "product_name", nullable = false)
     private String productName;
 
-    @Column(name = "base_price",precision = 10, scale = 2) // Arkadaşınızın alanı: basePrice
+    @Column(name = "base_price", precision = 10, scale = 2)
     private BigDecimal basePrice;
 
-    // Arkadaşınızın alanı: categoryID (Hangi kategoriye ait)
-    // --- GERÇEK İLİŞKİ ---
-    // Az önce (Adım 17'de) oluşturduğumuz 'Category' yer tutucusuna bağlanıyoruz.
-    @ManyToOne
-    @JoinColumn(name = "category_id", nullable = true) // Kategorisiz ürün olabilir (?) diye 'nullable = true'
-    private  Category category;
+    // --- GÜNCELLENMİŞ HALİ ---
+    @Column(name = "stock_quantity", nullable = false, columnDefinition = "integer default 0")
+    private Integer stockQuantity = 0;
 
-    @Column(name = "is_kitchen_item") // Arkadaşınızın alanı: isKitchenItem
+    @ManyToOne
+    @JoinColumn(name = "category_id", nullable = true)
+    private Category category;
+
+    @Column(name = "is_kitchen_item")
     private boolean isKitchenItem;
 
-    @Column(name = "is_available") // Arkadaşınızın alanı: isAvailable
+    @Column(name = "is_available")
     private boolean isAvailable;
 
-    // JPA için boş constructor
     public Product() {
     }
 
@@ -61,6 +61,16 @@ public class Product {
     public void setBasePrice(BigDecimal basePrice) {
         this.basePrice = basePrice;
     }
+
+    // --- YENİ STOK GETTER/SETTER ---
+    public Integer getStockQuantity() {
+        return stockQuantity;
+    }
+
+    public void setStockQuantity(Integer stockQuantity) {
+        this.stockQuantity = stockQuantity;
+    }
+    // -------------------------------
 
     public Category getCategory() {
         return category;
