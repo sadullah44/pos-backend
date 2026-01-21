@@ -19,9 +19,13 @@ public class Product {
     @Column(name = "base_price", precision = 10, scale = 2)
     private BigDecimal basePrice;
 
-    // --- GÜNCELLENMİŞ HALİ ---
     @Column(name = "stock_quantity", nullable = false, columnDefinition = "integer default 0")
     private Integer stockQuantity = 0;
+
+    // --- YENİ EKLENEN ALAN: FOTOĞRAF YOLU ---
+    @Column(name = "image_path")
+    private String imagePath;
+    // ----------------------------------------
 
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = true)
@@ -37,62 +41,28 @@ public class Product {
     }
 
     // --- Getter ve Setter Metotları ---
+    public Long getProductID() { return productID; }
+    public void setProductID(Long productID) { this.productID = productID; }
 
-    public Long getProductID() {
-        return productID;
-    }
+    public String getProductName() { return productName; }
+    public void setProductName(String productName) { this.productName = productName; }
 
-    public void setProductID(Long productID) {
-        this.productID = productID;
-    }
+    public BigDecimal getBasePrice() { return basePrice; }
+    public void setBasePrice(BigDecimal basePrice) { this.basePrice = basePrice; }
 
-    public String getProductName() {
-        return productName;
-    }
+    public Integer getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
 
-    public void setProductName(String productName) {
-        this.productName = productName;
-    }
+    public Category getCategory() { return category; }
+    public void setCategory(Category category) { this.category = category; }
 
-    public BigDecimal getBasePrice() {
-        return basePrice;
-    }
+    public boolean isKitchenItem() { return isKitchenItem; }
+    public void setKitchenItem(boolean kitchenItem) { this.isKitchenItem = kitchenItem; }
 
-    public void setBasePrice(BigDecimal basePrice) {
-        this.basePrice = basePrice;
-    }
+    public boolean isAvailable() { return isAvailable; }
+    public void setAvailable(boolean available) { this.isAvailable = available; }
 
-    // --- YENİ STOK GETTER/SETTER ---
-    public Integer getStockQuantity() {
-        return stockQuantity;
-    }
-
-    public void setStockQuantity(Integer stockQuantity) {
-        this.stockQuantity = stockQuantity;
-    }
-    // -------------------------------
-
-    public Category getCategory() {
-        return category;
-    }
-
-    public void setCategory(Category category) {
-        this.category = category;
-    }
-
-    public boolean isKitchenItem() {
-        return isKitchenItem;
-    }
-
-    public void setKitchenItem(boolean kitchenItem) {
-        this.isKitchenItem = kitchenItem;
-    }
-
-    public boolean isAvailable() {
-        return isAvailable;
-    }
-
-    public void setAvailable(boolean available) {
-        this.isAvailable = available;
-    }
+    // --- YENİ GETTER/SETTER ---
+    public String getImagePath() { return imagePath; }
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
 }

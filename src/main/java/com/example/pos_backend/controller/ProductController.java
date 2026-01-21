@@ -1,16 +1,18 @@
-// Paket adınız (örn: com.example.pos_backend.controller)
 package com.example.pos_backend.controller;
 
 import com.example.pos_backend.dto.AddProductRequest;
 import com.example.pos_backend.model.Product;
-import com.example.pos_backend.service.ProductService; // "Ürün Beyni"ni import et
+import com.example.pos_backend.service.ProductService;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @CrossOrigin("*")
 @RestController
-@RequestMapping("/urunler") // Ana adres (Android'in '@GET("urunler")' ile eşleşir)
+@RequestMapping("/urunler")
 public class ProductController {
 
     private final ProductService productService;
@@ -19,51 +21,61 @@ public class ProductController {
         this.productService = productService;
     }
 
-    /**
-     * MEVCUT KAPI (Tüm Ürünleri Getirir)
-     * Adres: GET /urunler
-     * (Ana adres '@RequestMapping("/urunler")' olduğu için,
-     * bu metot sadece '@GetMapping' kullanır)
-     */
+    // --- LİSTELEME İŞLEMLERİ (Aynı kaldı) ---
     @GetMapping
     public List<Product> getAllProducts() {
         return productService.getAllProducts();
     }
 
-
-    // --- YENİ EKLENEN KAPI (Adım 96 - Düzeltme) ---
-    /**
-     * "Mutfağa Ürün Ekleme" Akışı Adım 8:
-     * Kategori ID'sine göre SADECE o kategorinin ürünlerini getirir.
-     * Adres: GET /urunler/kategori/{id}
-     *
-     * Bu, Android'deki (Adım 94) '@GET("urunler/kategori/{kategoriId}")'
-     * kapısının "Sunucu" tarafındaki karşılığıdır.
-     */
-    @GetMapping("/kategori/{kategoriId}") // '/urunler' (ana adres) + '/kategori/{id}'
+    @GetMapping("/kategori/{kategoriId}")
     public List<Product> getProductsByCategoryId(@PathVariable Long kategoriId) {
-
-        // KAPI (Controller), İŞİ BEYNE (Service) PASLAR
-        // (Bu 'getProductsByCategoryId' metodu 'ProductService'de
-        // 'kırmızı' görünecek, çünkü onu bir sonraki adımda (Bölüm 2)
-        // ekleyeceğiz)
         return productService.getProductsByCategoryId(kategoriId);
     }
-    // --- DÜZELTME BİTTİ ---
-    @PostMapping("/ekle")
-    public Product addProduct(@RequestBody AddProductRequest request) {
+
+    // --- EKLEME İŞLEMLERİ (Aynı kaldı) ---
+    @PostMapping(value = "/ekle", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Product addProductJson(@RequestBody AddProductRequest request) {
         return productService.addProduct(request);
     }
-    // GÜNCELLEME İSTEĞİ (PUT)
-    @PutMapping("/{id}")
-    public Product updateProduct(@PathVariable Long id, @RequestBody AddProductRequest request) {
+
+    @PostMapping(value = "/ekle", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Product addProductWithImage(
+            @RequestParam("name") String name,
+            @RequestParam("price") BigDecimal price,
+            @RequestParam("stock") Integer stock,
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam(value = "image", required = false) MultipartFile image
+    ) {
+        return productService.addProductWithImage(name, price, stock, categoryId, image);
+    }
+
+    // --- GÜNCELLEME İŞLEMLERİ (GÜNCELLENDİ) ---
+
+    // SENARYO 1: Sadece metin güncelleme (JSON ile) - ESKİ YÖNTEM
+    // Content-Type: application/json
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Product updateProductJson(@PathVariable Long id, @RequestBody AddProductRequest request) {
         return productService.updateProduct(id, request);
     }
 
-    // SİLME İSTEĞİ (DELETE)
+    // SENARYO 2: Resimli veya Resimsiz Multipart güncelleme - YENİ YÖNTEM (Android İçin)
+    // Content-Type: multipart/form-data
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public Product updateProductMultipart(
+            @PathVariable Long id,
+            @RequestParam("name") String name,
+            @RequestParam("price") BigDecimal price,
+            @RequestParam("stock") Integer stock,
+            @RequestParam("categoryId") Long categoryId,
+            @RequestParam(value = "image", required = false) MultipartFile image
+    ) {
+        // Parametreleri Service'deki yeni metoda yönlendiriyoruz
+        return productService.updateProductWithImage(id, name, price, stock, categoryId, image);
+    }
+
+    // --- SİLME ---
     @DeleteMapping("/{id}")
     public void deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
     }
-
 }

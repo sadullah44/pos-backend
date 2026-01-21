@@ -13,12 +13,11 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // İSTEDİĞİN SATIR BURASI: Şifreleyiciyi sisteme tanıtıyoruz
+    // Şifreleyiciyi sisteme tanıtıyoruz
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
@@ -26,8 +25,15 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Oturumlar artık biletli (Stateless)
                 .authorizeHttpRequests(auth -> auth
+                        // --- 1. KRİTİK DÜZELTME: BURASI ARTIK AKTİF ---
+                        // Resim klasörüne (uploads) gelen isteklerde kimlik sorma!
+                        .requestMatchers("/uploads/**").permitAll()
+
+                        // Giriş ve şifre işlemleri de herkese açık
                         .requestMatchers("/login", "/forgot-password", "/reset-password").permitAll()
-                        .anyRequest().authenticated() // Diğer TÜM kapılar bilet (Token) ister
+
+                        // Bunların dışındaki her şey için Token zorunlu
+                        .anyRequest().authenticated()
                 );
 
         // Bizim yazdığımız filtreyi standart güvenlikten önceye koy
