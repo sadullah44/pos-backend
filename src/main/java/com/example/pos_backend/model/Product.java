@@ -22,10 +22,8 @@ public class Product {
     @Column(name = "stock_quantity", nullable = false, columnDefinition = "integer default 0")
     private Integer stockQuantity = 0;
 
-    // --- YENİ EKLENEN ALAN: FOTOĞRAF YOLU ---
     @Column(name = "image_path")
     private String imagePath;
-    // ----------------------------------------
 
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = true)
@@ -37,10 +35,29 @@ public class Product {
     @Column(name = "is_available")
     private boolean isAvailable;
 
+    // ==========================================
+    // 🆕 YENİ EKLENEN RESTORAN ÖZELLİKLERİ (DB Sütunları)
+    // ==========================================
+
+    @Column(name = "description", length = 500) // Açıklama biraz uzun olabilir
+    private String description;
+
+    @Column(name = "cooking_level")
+    private String cookingLevel;
+
+    @Column(name = "spice_level")
+    private String spiceLevel;
+
+    @Column(name = "salt_level")
+    private String saltLevel;
+
+    // ==========================================
+
     public Product() {
     }
 
     // --- Getter ve Setter Metotları ---
+
     public Long getProductID() { return productID; }
     public void setProductID(Long productID) { this.productID = productID; }
 
@@ -53,6 +70,9 @@ public class Product {
     public Integer getStockQuantity() { return stockQuantity; }
     public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
 
+    public String getImagePath() { return imagePath; }
+    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
+
     public Category getCategory() { return category; }
     public void setCategory(Category category) { this.category = category; }
 
@@ -62,7 +82,17 @@ public class Product {
     public boolean isAvailable() { return isAvailable; }
     public void setAvailable(boolean available) { this.isAvailable = available; }
 
-    // --- YENİ GETTER/SETTER ---
-    public String getImagePath() { return imagePath; }
-    public void setImagePath(String imagePath) { this.imagePath = imagePath; }
+    // --- Yeni Getter/Setterlar ---
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public String getCookingLevel() { return cookingLevel; }
+    public void setCookingLevel(String cookingLevel) { this.cookingLevel = cookingLevel; }
+
+    public String getSpiceLevel() { return spiceLevel; }
+    public void setSpiceLevel(String spiceLevel) { this.spiceLevel = spiceLevel; }
+
+    public String getSaltLevel() { return saltLevel; }
+    public void setSaltLevel(String saltLevel) { this.saltLevel = saltLevel; }
 }

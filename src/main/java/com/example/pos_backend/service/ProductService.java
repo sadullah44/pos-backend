@@ -51,10 +51,11 @@ public class ProductService {
         return productRepository.findByCategory(category);
     }
 
-    // --- YENİ: FOTOĞRAFLI ÜRÜN EKLEME ---
-    // Android'den gelen veriler RequestBody yerine parametre olarak geliyor.
+    // --- YENİ: FOTOĞRAFLI ÜRÜN EKLEME (Parametreler Genişletildi) ---
     @Transactional
-    public Product addProductWithImage(String name, BigDecimal price, Integer stock, Long categoryId, MultipartFile imageFile) {
+    public Product addProductWithImage(String name, BigDecimal price, Integer stock, Long categoryId,
+                                       String description, String cookingLevel, String spiceLevel, String saltLevel,
+                                       MultipartFile imageFile) {
         // 1. Kategoriyi Bul
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(() -> new RuntimeException("Kategori bulunamadı!"));
@@ -68,11 +69,16 @@ public class ProductService {
         newProduct.setAvailable(true);
         newProduct.setKitchenItem(true);
 
+        // --- YENİ ALANLARIN EKLENMESİ ---
+        newProduct.setDescription(description);
+        newProduct.setCookingLevel(cookingLevel);
+        newProduct.setSpiceLevel(spiceLevel);
+        newProduct.setSaltLevel(saltLevel);
+        // --------------------------------
+
         // 3. Fotoğrafı Kaydet (Eğer varsa)
         if (imageFile != null && !imageFile.isEmpty()) {
             String fileName = saveFile(imageFile);
-            // URL olarak erişilebilir yol (Örn: /images/resim.jpg)
-            // Bu yolu WebConfig dosyasında ayarlayacağız.
             newProduct.setImagePath(fileName);
         }
 
@@ -97,7 +103,7 @@ public class ProductService {
         }
     }
 
-    // --- JSON ile Ekleme (Eski Metot - Koruyoruz) ---
+    // --- JSON ile Ekleme (DTO Kullanan Metot) ---
     @Transactional
     public Product addProduct(AddProductRequest request) {
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -111,9 +117,18 @@ public class ProductService {
         newProduct.setKitchenItem(true);
         newProduct.setStockQuantity(request.getStock() != null ? request.getStock() : 0);
 
+        // --- YENİ ALANLARIN EKLENMESİ ---
+        newProduct.setDescription(request.getDescription());
+        newProduct.setImagePath(request.getImagePath());
+        newProduct.setCookingLevel(request.getCookingLevel());
+        newProduct.setSpiceLevel(request.getSpiceLevel());
+        newProduct.setSaltLevel(request.getSaltLevel());
+        // --------------------------------
+
         return productRepository.save(newProduct);
     }
 
+    // --- JSON ile Güncelleme (Android App Burayı Kullanıyor) ---
     @Transactional
     public Product updateProduct(Long productId, AddProductRequest request) {
         Product existingProduct = productRepository.findById(productId)
@@ -122,6 +137,7 @@ public class ProductService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new EntityNotFoundException("Kategori bulunamadı: " + request.getCategoryId()));
 
+        // Temel Güncellemeler
         existingProduct.setProductName(request.getProductName());
         existingProduct.setBasePrice(request.getBasePrice());
         existingProduct.setCategory(category);
@@ -130,11 +146,26 @@ public class ProductService {
             existingProduct.setStockQuantity(request.getStock());
         }
 
+        // --- YENİ ALANLARIN GÜNCELLENMESİ ---
+        existingProduct.setDescription(request.getDescription());
+        existingProduct.setCookingLevel(request.getCookingLevel());
+        existingProduct.setSpiceLevel(request.getSpiceLevel());
+        existingProduct.setSaltLevel(request.getSaltLevel());
+
+        // Eğer request içinde yeni bir resim yolu string olarak gelirse güncelle
+        if (request.getImagePath() != null) {
+            existingProduct.setImagePath(request.getImagePath());
+        }
+        // ------------------------------------
+
         return productRepository.save(existingProduct);
     }
-    // 2. YENİ METOT (MULTIPART / RESİMLİ GÜNCELLEME İÇİN)
+
+    // 2. YENİ METOT (MULTIPART / RESİMLİ GÜNCELLEME İÇİN - Parametreler Genişletildi)
     @Transactional
-    public Product updateProductWithImage(Long productId, String name, BigDecimal price, Integer stock, Long categoryId, MultipartFile image) {
+    public Product updateProductWithImage(Long productId, String name, BigDecimal price, Integer stock, Long categoryId,
+                                          String description, String cookingLevel, String spiceLevel, String saltLevel,
+                                          MultipartFile image) {
         // 1. Ürünü Bul
         Product existingProduct = productRepository.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("Ürün bulunamadı: " + productId));
@@ -151,20 +182,23 @@ public class ProductService {
             existingProduct.setStockQuantity(stock);
         }
 
+        // --- YENİ ALANLARIN GÜNCELLENMESİ ---
+        existingProduct.setDescription(description);
+        existingProduct.setCookingLevel(cookingLevel);
+        existingProduct.setSpiceLevel(spiceLevel);
+        existingProduct.setSaltLevel(saltLevel);
+        // --------------------------------
+
         // 4. Resim İşlemleri (Eğer yeni resim gönderildiyse)
         if (image != null && !image.isEmpty()) {
             try {
-                // Kayıt klasörü (Projenin çalıştığı yerdeki 'uploads' klasörü)
-                // "user.dir" projenin kök dizinini verir.
+                // Kayıt klasörü
                 String uploadDir = System.getProperty("user.dir") + File.separator + "uploads";
-
-                // Klasör yoksa oluştur
                 Path uploadPath = Paths.get(uploadDir);
                 if (!Files.exists(uploadPath)) {
                     Files.createDirectories(uploadPath);
                 }
 
-                // Dosya ismini güvenli ve eşsiz hale getir (çakışmayı önler)
                 String originalFilename = image.getOriginalFilename();
                 String extension = "";
                 if (originalFilename != null && originalFilename.contains(".")) {
@@ -172,11 +206,9 @@ public class ProductService {
                 }
                 String newFileName = UUID.randomUUID().toString() + extension;
 
-                // Dosyayı kaydet
                 Path filePath = uploadPath.resolve(newFileName);
                 Files.copy(image.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-                // Veritabanına dosya adını yaz
                 existingProduct.setImagePath(newFileName);
 
             } catch (IOException e) {
